@@ -1,0 +1,19 @@
+---
+alwaysApply: true
+---
+Nomenclature rules for Flutter projects:
+
+- File names: Use snake_case (e.g., home_page.dart).
+- Class names: Use UpperCamelCase (e.g., MyHomePage).
+- Variable and field names: Use lowerCamelCase (e.g., counterValue).
+- Constant names: Use lowerCamelCase or use ALL_UPPER_CASE_WITH_UNDERSCORES for global constants if appropriate.
+- Widget names: Use UpperCamelCase and end with Widget or their function (e.g., CustomButton, UserAvatar).
+- Method and function names: Use lowerCamelCase (e.g., fetchData()).
+- Private members: Use lowerCamelCase with leading underscore (e.g., _myValue).
+- Enum names: Use UpperCamelCase for enum type and values (e.g., StatusType.success).
+- Package and directory names: Use snake_case and short, meaningful names (e.g., widgets, models).
+- Avoid abbreviations except for very common ones (e.g., "btn" for button is discouraged; use "Button" instead).
+- Use descriptive, clear, and concise names. Names should reflect the purpose or function.
+- Do not prefix files, classes, or variables with redundant words (e.g., prefer user_profile.dart over my_user_profile.dart).
+
+These conventions ensure clarity, consistency, and easy navigation in Flutter codebases.

@@ -1,0 +1,68 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
+import 'initial_screen.dart';
+import 'home_screen.dart';
+import '../../data/services/session_service.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkSessionAndNavigate();
+  }
+
+  void _checkSessionAndNavigate() async {
+    await Future.delayed(
+      const Duration(seconds: AppConstants.splashDurationSeconds),
+    );
+
+    if (!mounted) return;
+
+    final isLoggedIn = await SessionService.isLoggedIn();
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const InitialScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.pureBlack, AppColors.bluishGray],
+            stops: [0.0, 0.7],
+          ),
+        ),
+        child: Center(
+          child: Image.asset(
+            'assets/animations/animated-motorbike-image-0023.gif',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+    );
+  }
+}
