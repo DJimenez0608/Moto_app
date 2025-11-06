@@ -35,8 +35,32 @@ app.get("/users", (req, res) => {
 app.get("/users/:id", async (req, res) => {
 })
 //OBTENER INFO DE LAS MOTOS DEL USUARIO
-app.get("/users/:id/motorcycles", (req, res) => {
+app.get("/users/:id/motorcycles", async (req, res) => {
+    const userId = req.params.id
+    //Verificar que haya exista el usuario con ese Id
+    const userexist = await db.query(
+        "SELECT * FROM users WHERE users.id = $1",
+        [userId]
+    )
     
+    if (userexist.rows.length < 1) {
+        return res.status(400).send("El usuario noe existe")
+    }
+
+    //Buscar las motos que esten asociadas al usuario con id userId
+    const userMotorcycles = await db.query(
+        "SELECT * FROM motorcycles where motorcycles.user_id = $1;",
+        [userId]
+    )
+    const userMotorcyclesRows = userMotorcycles.rows 
+
+    if (userMotorcyclesRows.length< 1) {
+        return null
+    }
+
+    res.status(200).json({userMotorcyclesRows})
+
+
 })
 //OBTENER LOS VIAJES DEL USUARIO
 app.get("/users/:id/travels", (req, res) => {
@@ -93,7 +117,11 @@ app.post("/users/login", async (req, res) => {
                         success: true,
                         message: "usuario logueado",
                         token: token,
-                        username: userBDrows.username
+                        username: userBDrows.username,
+                        fullName: userBDrows.full_name,
+                        email: userBDrows.email,
+                        phoneNumber: userBDrows.phone_number,
+                        id : userBDrows.id,
                     })
                 } else {
                     res.status(401).send("Usuario o contraseña incorrecta")

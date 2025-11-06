@@ -57,3 +57,21 @@ CREATE TABLE maintenance (
     description TEXT NOT NULL,
     cost DECIMAL(10, 2) NOT NULL
 )
+
+-- TECNOMECANIC (Revisión técnico-mecánica)
+CREATE TABLE technomechanical (
+    id SERIAL PRIMARY KEY,
+    motorcycle_id INT NOT NULL REFERENCES motorcycles(id) ON DELETE CASCADE,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    cost DECIMAL(10, 2) NOT NULL
+);
+
+-- SOAT (Seguro Obligatorio)
+CREATE TABLE soat (
+    id SERIAL PRIMARY KEY,
+    motorcycle_id INT NOT NULL REFERENCES motorcycles(id) ON DELETE CASCADE,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    cost DECIMAL(10, 2) NOT NULL
+);
