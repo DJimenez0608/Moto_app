@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:moto_app/domain/models/user.dart';
+import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
 import 'package:moto_app/features/auth/presentation/screens/home_screen.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../widgets/custom_button.dart';
@@ -27,6 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -88,16 +92,29 @@ class _LoginScreenState extends State<LoginScreen> {
                           loginResult['token']!,
                           loginResult['username']!,
                         );
+
+                        //SetUser values Provider
+                        userProvider.setUser(
+                          User(
+                            id: int.parse(loginResult['id']!),
+                            fullName: loginResult['fullName']!,
+                            email: loginResult['email']!,
+                            phoneNumber: loginResult['phoneNumber']!,
+                            username: loginResult['username']!,
+                            password: "",
+                          ),
+                        );
                         // Verify that session was saved correctly
                         final isSessionSaved =
                             await SessionService.isLoggedIn();
                         if (!mounted) return;
                         if (isSessionSaved) {
-                          Navigator.pushReplacement(
+                          Navigator.pushAndRemoveUntil(
                             currentContext,
                             MaterialPageRoute(
                               builder: (context) => const HomeScreen(),
                             ),
+                            (route) => false,
                           );
                         } else {
                           ScaffoldMessenger.of(currentContext).showSnackBar(

@@ -21,6 +21,10 @@ class UserHttpService {
       return {
         'token': responseData['token'] as String,
         'username': responseData['username'] as String,
+        "fullName": responseData['fullName'] as String,
+        "email": responseData['email'] as String,
+        "phoneNumber": responseData['phoneNumber'] as String,
+        "id": (responseData['id'] as int).toString(),
       };
     } else if (response.statusCode == 401) {
       return null;
