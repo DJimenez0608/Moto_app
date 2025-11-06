@@ -27,10 +27,11 @@ Permite realizar un **seguimiento personalizado** de los servicios, recordatorio
 |-------------|-------------|
 | Frontend | Flutter |
 | Backend | Node.js + Express |
-| Base de datos | SQL |
+| Base de datos | PostgresSQL |
 | API externa | Rappid Motorcycle |
 | Autenticación | bcrypt + salt |
 | Arquitectura | Clean Architecture |
+| Manejo de estado | Provider | 
 | Control de versiones | Git / GitHub |
 
 ---
