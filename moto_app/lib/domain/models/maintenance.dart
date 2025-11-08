@@ -22,12 +22,20 @@ class Maintenance {
   final double cost;
 
   factory Maintenance.fromJson(Map<String, dynamic> json) {
+    final idValue = json['id'];
+    final motorcycleIdValue = json['motorcycle_id'];
+    final costValue = json['cost'];
+
     return Maintenance(
-      id: json['id'],
-      motorcycleId: json['motorcycle_id'],
-      date: DateTime.parse(json['date']),
-      description: json['description'],
-      cost: (json['cost'] as num).toDouble(),
+      id: idValue is int ? idValue : int.parse(idValue.toString()),
+      motorcycleId: motorcycleIdValue is int
+          ? motorcycleIdValue
+          : int.parse(motorcycleIdValue.toString()),
+      date: DateTime.parse(json['date'].toString()),
+      description: json['description'] as String,
+      cost: costValue is num
+          ? costValue.toDouble()
+          : double.parse(costValue.toString()),
     );
   }
 

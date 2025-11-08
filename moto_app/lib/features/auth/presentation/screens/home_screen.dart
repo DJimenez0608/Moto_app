@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:animated_item/animated_item.dart';
+import 'package:moto_app/domain/models/maintenance.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
+import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:provider/provider.dart';
@@ -30,15 +32,39 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadMotorcycles();
   }
 
-  void _loadMotorcycles() {
+  Future<void> _loadMotorcycles() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final motorcycleProvider = Provider.of<MotorcycleProvider>(
       context,
       listen: false,
     );
+    final maintenanceProvider = Provider.of<MaintenanceProvider>(
+      context,
+      listen: false,
+    );
 
-    if (userProvider.user?.id != null) {
-      motorcycleProvider.getMotorcycles(userProvider.user!.id);
+    final userId = userProvider.user?.id;
+    if (userId == null) return;
+
+    try {
+      await motorcycleProvider.getMotorcycles(userId);
+      maintenanceProvider.clearMaintenance();
+
+      final motorcycles = motorcycleProvider.motorcycles;
+      if (motorcycles.isEmpty) {
+        return;
+      }
+
+      await Future.wait(
+        motorcycles.map(
+          (motorcycle) => maintenanceProvider.getMaintenance(motorcycle.id),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cargar datos: ${e.toString()}')),
+      );
     }
   }
 
@@ -104,7 +130,41 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBody(MotorcycleProvider motorcycleProvider) {
+  Widget _buildBody(
+    MotorcycleProvider motorcycleProvider,
+    MaintenanceProvider maintenanceProvider,
+  ) {
+    final maintenanceList = maintenanceProvider.allMaintenance;
+    final errorMessage = maintenanceProvider.errorMessage;
+    final motorcycleNameById = {
+      for (final motorcycle in motorcycleProvider.motorcycles)
+        motorcycle.id: '${motorcycle.make} ${motorcycle.model}',
+    };
+
+    final Widget maintenanceContent;
+    if (maintenanceProvider.isLoading && maintenanceList.isEmpty) {
+      maintenanceContent = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (maintenanceList.isEmpty) {
+      maintenanceContent = _buildEmptyMaintenanceCard(context);
+    } else {
+      maintenanceContent = ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: maintenanceList.length,
+        itemBuilder: (context, index) {
+          final maintenance = maintenanceList[index];
+          final motorcycleName = motorcycleNameById[maintenance.motorcycleId];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10.0),
+            child: _buildMaintenanceCard(context, maintenance, motorcycleName),
+          );
+        },
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -218,67 +278,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               Text(
                 "Historial de mantenimientos",
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              SizedBox(height: 15),
-              Card(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Container negro (foto moto)
-                    Container(
-                      //ICONO DE MANTENIMIENTO
-                      width: MediaQuery.of(context).size.width * 0.1,
-                      height: 40,
-                      margin: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(
-                        color: AppColors.pureBlack,
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(AppConstants.borderRadius),
-                        ),
-                      ),
-                    ),
-
-                    // Column con datos
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Descripcion del mantenimiento",
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        Text(
-                          "fecha del mantenimiento",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.darkPurple,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadius,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(6.0),
-                        child: Text(
-                          "100.000 COP",
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 15),
+              if (errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10.0),
+                  child: Text(
+                    errorMessage,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.redAccent),
+                  ),
                 ),
-              ),
-              _buildMaintenanceCard(context),
-              _buildMaintenanceCard(context),
-              _buildMaintenanceCard(context),
+              maintenanceContent,
               const SizedBox(height: 100), // Espacio para el bottom bar
             ],
           ),
@@ -332,6 +348,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final motorcycleProvider = Provider.of<MotorcycleProvider>(
+      context,
+      listen: true,
+    );
+    final maintenanceProvider = Provider.of<MaintenanceProvider>(
       context,
       listen: true,
     );
@@ -398,7 +418,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentTab,
         children: [
           const CompareScreen(),
-          _buildBody(motorcycleProvider),
+          _buildBody(motorcycleProvider, maintenanceProvider),
           const ProfileScreen(),
         ],
       ),
@@ -425,20 +445,24 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-Widget _buildMaintenanceCard(BuildContext context) {
-  return Padding(
-    padding: const EdgeInsets.all(5.0),
-    child: Card(
+Widget _buildMaintenanceCard(
+  BuildContext context,
+  Maintenance maintenance,
+  String? motorcycleName,
+) {
+  final theme = Theme.of(context);
+  final formattedDate = maintenance.date.toIso8601String().split('T').first;
+
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(12.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Container negro (foto moto)
           Container(
-            //ICONO DE MANTENIMIENTO
             width: MediaQuery.of(context).size.width * 0.1,
             height: 40,
-            margin: const EdgeInsets.all(5),
+            margin: const EdgeInsets.only(right: 12),
             decoration: const BoxDecoration(
               color: AppColors.pureBlack,
               borderRadius: BorderRadius.all(
@@ -446,21 +470,26 @@ Widget _buildMaintenanceCard(BuildContext context) {
               ),
             ),
           ),
-
-          // Column con datos
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Descripcion del mantenimiento",
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              Text(
-                "fecha del mantenimiento",
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (motorcycleName != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: Text(
+                      motorcycleName,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                Text(
+                  maintenance.description,
+                  style: theme.textTheme.titleSmall,
+                ),
+                Text('Fecha: $formattedDate', style: theme.textTheme.bodySmall),
+              ],
+            ),
           ),
           Container(
             decoration: BoxDecoration(
@@ -470,12 +499,30 @@ Widget _buildMaintenanceCard(BuildContext context) {
             child: Padding(
               padding: const EdgeInsets.all(6.0),
               child: Text(
-                "100.000 COP",
-                style: Theme.of(context).textTheme.bodySmall,
+                '${maintenance.cost.toStringAsFixed(2)} COP',
+                style: theme.textTheme.bodySmall,
               ),
             ),
           ),
         ],
+      ),
+    ),
+  );
+}
+
+Widget _buildEmptyMaintenanceCard(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 30.0),
+    child: SizedBox(
+      height: 100,
+      child: Card(
+        child: Center(
+          child: Text(
+            'No hay mantenimientos registrados',
+            style: Theme.of(context).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+        ),
       ),
     ),
   );

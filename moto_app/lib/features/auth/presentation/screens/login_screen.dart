@@ -88,22 +88,22 @@ class _LoginScreenState extends State<LoginScreen> {
                       );
                       if (!mounted) return;
                       if (loginResult != null) {
+                        final user = User(
+                          id: int.parse(loginResult['id']!),
+                          fullName: loginResult['fullName']!,
+                          email: loginResult['email']!,
+                          phoneNumber: loginResult['phoneNumber']!,
+                          username: loginResult['username']!,
+                          password: "",
+                        );
+
                         await SessionService.saveSession(
-                          loginResult['token']!,
-                          loginResult['username']!,
+                          token: loginResult['token']!,
+                          user: user,
                         );
 
                         //SetUser values Provider
-                        userProvider.setUser(
-                          User(
-                            id: int.parse(loginResult['id']!),
-                            fullName: loginResult['fullName']!,
-                            email: loginResult['email']!,
-                            phoneNumber: loginResult['phoneNumber']!,
-                            username: loginResult['username']!,
-                            password: "",
-                          ),
-                        );
+                        userProvider.setUser(user);
                         // Verify that session was saved correctly
                         final isSessionSaved =
                             await SessionService.isLoggedIn();

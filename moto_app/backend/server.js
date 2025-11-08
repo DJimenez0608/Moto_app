@@ -71,8 +71,31 @@ app.get("/motorcycle/:id/observations", (req, res) => {
     
 })
 //OBTENER INFO DE LOS REGISTROS DE MANTENIMIENTO
-app.get("/motorcycle/:id/maintenance", (req, res) => {
-    
+app.get("/motorcycle/:id/maintenance", async (req, res) => {
+    const motorcycleId = req.params.id;
+
+    try {
+        const motorcycle = await db.query(
+            "SELECT id FROM motorcycles WHERE motorcycles.id = $1;",
+            [motorcycleId]
+        );
+
+        if (motorcycle.rows.length < 1) {
+            return res.status(404).send("La motocicleta no existe");
+        }
+
+        const maintenance = await db.query(
+            "SELECT * FROM maintenance WHERE maintenance.motorcycle_id = $1 ORDER BY date DESC;",
+            [motorcycleId]
+        );
+
+        const maintenanceRows = maintenance.rows;
+
+        return res.status(200).json({ maintenanceRows });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send("Error al obtener registros de mantenimiento");
+    }
 })
 
 

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import 'initial_screen.dart';
 import 'home_screen.dart';
 import '../../data/services/session_service.dart';
+import '../../../../domain/providers/user_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,10 +30,26 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final isLoggedIn = await SessionService.isLoggedIn();
+    final storedUser =
+        isLoggedIn ? await SessionService.loadUser() : null;
 
     if (!mounted) return;
 
     if (isLoggedIn) {
+      if (storedUser != null) {
+        final userProvider =
+            Provider.of<UserProvider>(context, listen: false);
+        userProvider.setUser(storedUser);
+      } else {
+        await SessionService.clearSession();
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const InitialScreen()),
+        );
+        return;
+      }
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
