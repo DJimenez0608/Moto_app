@@ -8,14 +8,7 @@ class CompareScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.pureBlack, AppColors.bluishGray],
-            stops: [0.0, 0.7],
-          ),
-        ),
+        color: AppColors.pureWhite,
         child: Center(
           child: Text(
             'Comparar motos',

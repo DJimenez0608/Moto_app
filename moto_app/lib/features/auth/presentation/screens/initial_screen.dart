@@ -12,14 +12,7 @@ class InitialScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.pureBlack, AppColors.bluishGray],
-            stops: [0.0, 0.7],
-          ),
-        ),
+        color: AppColors.pureWhite,
         child: Center(
           child: Card(
             margin: const EdgeInsets.symmetric(
@@ -30,6 +23,7 @@ class InitialScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     'MotoApp',

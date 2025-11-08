@@ -110,14 +110,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.pureBlack, AppColors.bluishGray],
-            stops: [0.0, 0.7],
-          ),
-        ),
+        color: AppColors.pureWhite,
         child: Center(
           child: SizedBox(
             child: Card(
@@ -135,7 +128,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         IconButton(
                           icon: const Icon(Icons.arrow_back),
                           onPressed: () => Navigator.pop(context),
-                          color: AppColors.neonCyan,
+                          color: AppColors.primaryBlue,
                         ),
                         const Spacer(),
                       ],
@@ -155,8 +148,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               shape: BoxShape.circle,
                               color:
                                   _currentPage == index
-                                      ? AppColors.neonCyan
-                                      : AppColors.pureWhite,
+                                      ? AppColors.primaryBlue
+                                      : AppColors.surfaceAlt,
                             ),
                           ),
                         ),

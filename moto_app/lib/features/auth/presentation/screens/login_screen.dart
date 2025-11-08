@@ -33,14 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.pureBlack, AppColors.bluishGray],
-            stops: [0.0, 0.7],
-          ),
-        ),
+        color: AppColors.pureWhite,
         child: Center(
           child: Card(
             margin: const EdgeInsets.symmetric(
@@ -51,13 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Row(
                     children: [
                       IconButton(
                         icon: const Icon(Icons.arrow_back),
                         onPressed: () => Navigator.pop(context),
-                        color: AppColors.neonCyan,
+                        color: AppColors.primaryBlue,
                       ),
                       const Spacer(),
                     ],
