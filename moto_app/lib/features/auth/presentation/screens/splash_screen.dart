@@ -30,15 +30,13 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final isLoggedIn = await SessionService.isLoggedIn();
-    final storedUser =
-        isLoggedIn ? await SessionService.loadUser() : null;
+    final storedUser = isLoggedIn ? await SessionService.loadUser() : null;
 
     if (!mounted) return;
 
     if (isLoggedIn) {
       if (storedUser != null) {
-        final userProvider =
-            Provider.of<UserProvider>(context, listen: false);
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
         userProvider.setUser(storedUser);
       } else {
         await SessionService.clearSession();
@@ -66,17 +64,10 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [AppColors.pureBlack, AppColors.bluishGray],
-            stops: [0.0, 0.7],
-          ),
-        ),
+        color: AppColors.pureWhite,
         child: Center(
           child: Image.asset(
-            'assets/animations/animated-motorbike-image-0023.gif',
+            'assets/animations/race_17904906.gif',
             fit: BoxFit.contain,
           ),
         ),

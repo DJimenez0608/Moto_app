@@ -82,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Container negro (foto moto)
             Padding(
               padding: const EdgeInsets.all(6.0),
               child: Container(
@@ -90,10 +89,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 100,
                 margin: const EdgeInsets.all(5),
                 decoration: const BoxDecoration(
-                  color: AppColors.pureBlack,
+                  color: AppColors.surfaceAlt,
                   borderRadius: BorderRadius.all(
                     Radius.circular(AppConstants.borderRadius),
                   ),
+                ),
+                child: const Icon(
+                  Icons.motorcycle,
+                  color: AppColors.primaryBlue,
+                  size: 36,
                 ),
               ),
             ),
@@ -166,14 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.pureBlack, AppColors.bluishGray],
-          stops: [0.0, 0.7],
-        ),
-      ),
+      color: AppColors.pureWhite,
       child: SingleChildScrollView(
         controller: _scrollController,
         child: Padding(
@@ -230,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           });
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.darkPurple,
+                          backgroundColor: AppColors.accentCoral,
                           foregroundColor: AppColors.pureWhite,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
@@ -238,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                        child: const Text('comparar '),
+                        child: const Text('Comparar'),
                       ),
                     ),
                   ],
@@ -361,21 +358,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar:
           _currentTab == 1
               ? AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                flexibleSpace: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [AppColors.pureBlack, AppColors.bluishGray],
-                      stops: [0.0, 0.7],
-                    ),
-                  ),
-                ),
                 leading: IconButton(
                   icon: const Icon(Icons.logout),
-                  color: AppColors.pureWhite,
+                  color: AppColors.primaryBlue,
                   onPressed: _handleLogout,
                 ),
                 title: Row(
@@ -405,8 +390,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 50,
                         height: 50,
                         decoration: const BoxDecoration(
-                          color: AppColors.pureBlack,
+                          color: AppColors.surfaceAlt,
                           shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: AppColors.primaryBlue,
                         ),
                       ),
                     ),
@@ -429,9 +418,6 @@ class _HomeScreenState extends State<HomeScreen> {
             _currentTab = index;
           });
         },
-        backgroundColor: AppColors.bluishGray,
-        selectedItemColor: AppColors.neonCyan,
-        unselectedItemColor: AppColors.pureWhite,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.compare_arrows),
@@ -464,10 +450,15 @@ Widget _buildMaintenanceCard(
             height: 40,
             margin: const EdgeInsets.only(right: 12),
             decoration: const BoxDecoration(
-              color: AppColors.pureBlack,
+              color: AppColors.primaryBlue,
               borderRadius: BorderRadius.all(
                 Radius.circular(AppConstants.borderRadius),
               ),
+            ),
+            child: const Icon(
+              Icons.build,
+              color: AppColors.pureWhite,
+              size: 20,
             ),
           ),
           Expanded(
@@ -493,7 +484,7 @@ Widget _buildMaintenanceCard(
           ),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.darkPurple,
+              color: AppColors.accentCoral,
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             ),
             child: Padding(
