@@ -482,16 +482,12 @@ Widget _buildMaintenanceCard(
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.accentCoral,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: Text(
-                '${maintenance.cost.toStringAsFixed(2)} COP',
-                style: theme.textTheme.bodySmall,
+          Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Text(
+              '${maintenance.cost.toStringAsFixed(2)} COP',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.pureBlack,
               ),
             ),
           ),

@@ -31,4 +31,12 @@
 - Maintain neutral palette consistent with app theme; leverage `Theme.of(context).textTheme` for typography.
 - Ensure empty state appears within scrollable column (e.g., `ListView.builder` replaced with conditional `SizedBox`).
 
+## R5 – Profile Screen Requirements (2025-11-09)
+
+- User data: `UserProvider` expone `user` con campos `fullName`, `email`, `phoneNumber`, etc. Para métricas se complementa con `MotorcycleProvider.motorcycles.length`.
+- Layout solicitado: `SingleChildScrollView` con `padding const EdgeInsets.all(12)`, `SizedBox(height: 500)` y `Stack` que superpone imagen `assets/images/SL_092920_35860_04.jpg`, contenedor 100x100 con ícono `Icons.person`, y `Text` con el nombre completo.
+- Tarjeta de estadísticas: `Card` de ancho completo y altura 100 con `Row` de tres `Column`, separadas por `VerticalDivider`. Valores: motos registradas (dinámico), carreras y ganadas (ambos 0 por ahora).
+- Acciones: cinco filas estilo tile con icono (Add, Money, Compare, Edit, Settings), título y flecha (`Icons.chevron_right`) siguiendo paleta neutra (`AppColors.surfaceSoft`, `AppColors.neutralText`) y borde redondeado según `AppConstants.borderRadius`.
+- Scroll: mantener espaciados consistentes (`SizedBox(height: 16/20)`) y tipografía del tema (`Theme.of(context).textTheme.titleMedium/bodyMedium`).
+
 
