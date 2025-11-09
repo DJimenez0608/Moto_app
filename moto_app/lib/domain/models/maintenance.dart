@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 List<Maintenance> maintenanceModelFromJson(String str) =>
-    List<Maintenance>.from(json.decode(str).map((x) => Maintenance.fromJson(x)));
+    List<Maintenance>.from(
+      json.decode(str).map((x) => Maintenance.fromJson(x)),
+    );
 
 String maintenanceModelToJson(List<Maintenance> data) =>
     json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
@@ -28,14 +30,16 @@ class Maintenance {
 
     return Maintenance(
       id: idValue is int ? idValue : int.parse(idValue.toString()),
-      motorcycleId: motorcycleIdValue is int
-          ? motorcycleIdValue
-          : int.parse(motorcycleIdValue.toString()),
+      motorcycleId:
+          motorcycleIdValue is int
+              ? motorcycleIdValue
+              : int.parse(motorcycleIdValue.toString()),
       date: DateTime.parse(json['date'].toString()),
       description: json['description'] as String,
-      cost: costValue is num
-          ? costValue.toDouble()
-          : double.parse(costValue.toString()),
+      cost:
+          costValue is num
+              ? costValue.toDouble()
+              : double.parse(costValue.toString()),
     );
   }
 
@@ -49,4 +53,3 @@ class Maintenance {
     };
   }
 }
-
