@@ -15,10 +15,23 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1800),
+      vsync: this,
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+    );
+    _controller.forward();
     _checkSessionAndNavigate();
   }
 
@@ -66,12 +79,21 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Container(
         color: AppColors.pureWhite,
         child: Center(
-          child: Image.asset(
-            'assets/animations/race_17904906.gif',
-            fit: BoxFit.contain,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Image.asset(
+              'assets/images/splashScreenLogo.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

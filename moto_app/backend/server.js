@@ -33,6 +33,8 @@ app.get("/users", (req, res) => {
 })
 //OBTENER INFO DE USUARIO
 app.get("/users/:id", async (req, res) => {
+    //Ya se hace en el login
+
 })
 //OBTENER INFO DE LAS MOTOS DEL USUARIO
 app.get("/users/:id/motorcycles", async (req, res) => {
@@ -233,6 +235,8 @@ app.post("/motorcycle/:id/observations", (req, res) => {
 })
 //REGISTRAR MOTO DE USUARIO
 app.post("/users/:id/motorcycles", (req, res) => {
+
+    const userId = req.params.id
     
 }) 
 //REGISTRAR VIAJE DE USUARIO 
