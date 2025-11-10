@@ -7,11 +7,12 @@ import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/trending_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
 import 'package:moto_app/features/auth/data/services/session_service.dart';
-import 'compare_screen.dart';
-import 'profile_screen.dart';
+import 'profile/profile_screen.dart';
 import 'initial_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -222,9 +223,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       flex: 3,
                       child: ElevatedButton(
                         onPressed: () {
-                          setState(() {
-                            _currentTab = 0;
-                          });
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CompareScreen(),
+                            ),
+                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accentCoral,
@@ -406,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(
         index: _currentTab,
         children: [
-          const CompareScreen(),
+          const TrendingScreen(),
           _buildBody(motorcycleProvider, maintenanceProvider),
           const ProfileScreen(),
         ],
@@ -420,8 +424,8 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.compare_arrows),
-            label: 'Comparar',
+            icon: Icon(Icons.trending_up),
+            label: 'Tendencias',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
