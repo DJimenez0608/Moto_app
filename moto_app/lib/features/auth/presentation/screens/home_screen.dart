@@ -7,6 +7,7 @@ import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/features/auth/presentation/screens/motorcycle_detail_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/trending_screen.dart';
 import 'package:provider/provider.dart';
@@ -76,9 +77,39 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Widget _buildMotorcycleCard(Motorcycle motorcycle) {
+  String _getMotorcycleImagePath(int index) {
+    switch (index) {
+      case 0:
+        return 'assets/images/yamaha.jpg';
+      case 1:
+        return 'assets/images/pulsar.png';
+      default:
+        return 'assets/images/notImageFound.jpg';
+    }
+  }
+
+  void _openMotorcycleDetail(Motorcycle motorcycle, int index) {
+    final heroTag = 'motorcycle_${motorcycle.id}';
+    final imagePath = _getMotorcycleImagePath(index);
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => MotorcycleDetailScreen(
+              motorcycleId: motorcycle.id,
+              imagePath: imagePath,
+              heroTag: heroTag,
+            ),
+      ),
+    );
+  }
+
+  Widget _buildMotorcycleCard(Motorcycle motorcycle, int index) {
+    final heroTag = 'motorcycle_${motorcycle.id}';
+    final imagePath = _getMotorcycleImagePath(index);
+
     return GestureDetector(
-      onTap: () {},
+      onTap: () => _openMotorcycleDetail(motorcycle, index),
       child: Card(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,10 +126,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     Radius.circular(AppConstants.borderRadius),
                   ),
                 ),
-                child: const Icon(
-                  Icons.motorcycle,
-                  color: AppColors.primaryBlue,
-                  size: 36,
+                child: Hero(
+                  tag: heroTag,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.all(
+                      Radius.circular(AppConstants.borderRadius),
+                    ),
+                    child: Image.asset(imagePath, fit: BoxFit.contain),
+                  ),
                 ),
               ),
             ),
@@ -181,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // PageView con noticias
               SizedBox(
-                height: 200,
+                height: 220,
                 width: double.infinity,
                 child: PageView.builder(
                   controller: _pageController,
@@ -275,6 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.only(bottom: 10.0),
                         child: _buildMotorcycleCard(
                           motorcycleProvider.motorcycles[index],
+                          index,
                         ),
                       );
                     },
