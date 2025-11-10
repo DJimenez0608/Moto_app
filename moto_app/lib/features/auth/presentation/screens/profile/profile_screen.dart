@@ -4,6 +4,11 @@ import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/add_motorcycle_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/edit_profile_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/money_balance_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/profile/actions/settings_screen.dart';
 import 'package:moto_app/features/auth/presentation/widgets/profile_action_tile.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -17,6 +22,11 @@ class ProfileScreen extends StatelessWidget {
     final user = userProvider.user;
     final fullName = user?.fullName ?? 'Usuario invitado';
     final motorcycleCount = motorcycleProvider.motorcycles.length;
+    void openScreen(Widget screen) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => screen),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.pureWhite,
@@ -48,30 +58,34 @@ class ProfileScreen extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 16),
-                    const ProfileActionTile(
+                    ProfileActionTile(
                       title: 'Agregar moto',
                       icon: Icons.add,
+                      onTap: () => openScreen(const AddMotorcycleScreen()),
                     ),
                     const SizedBox(height: 12),
-                    const ProfileActionTile(
+                    ProfileActionTile(
                       title: 'Gastos',
                       icon: Icons.attach_money,
+                      onTap: () => openScreen(const MoneyBalanceScreen()),
                     ),
                     const SizedBox(height: 12),
-                    const ProfileActionTile(
+                    ProfileActionTile(
                       title: 'Comparar',
-                      icon: Icons.compare,
+                      icon: Icons.compare_arrows_outlined,
+                      onTap: () => openScreen(const CompareScreen()),
                     ),
                     const SizedBox(height: 12),
-                    const ProfileActionTile(
+                    ProfileActionTile(
                       title: 'Editar perfil',
                       icon: Icons.edit,
+                      onTap: () => openScreen(const EditProfileScreen()),
                     ),
                     const SizedBox(height: 12),
-                    const ProfileActionTile(
+                    ProfileActionTile(
                       title: 'Configuraciones',
                       icon: Icons.settings,
-                      //ON TAP
+                      onTap: () => openScreen(const SettingsScreen()),
                     ),
                   ],
                 ),
