@@ -11,6 +11,20 @@ class MotorcycleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  List<Motorcycle> searchMotorcyclesByMake(String query) {
+    if (query.trim().isEmpty) {
+      return List.unmodifiable(_motorcycles);
+    }
+
+    final normalizedQuery = query.trim().toLowerCase();
+    return _motorcycles
+        .where(
+          (motorcycle) =>
+              motorcycle.make.toLowerCase().contains(normalizedQuery),
+        )
+        .toList(growable: false);
+  }
+
   void clearMotorcycles() {
     _motorcycles = [];
     notifyListeners();
