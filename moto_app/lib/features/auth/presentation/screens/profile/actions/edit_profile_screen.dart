@@ -116,6 +116,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final fallbackName = user?.fullName ?? 'Usuario invitado';
     final displayName =
         _fullNameController.text.isEmpty ? fallbackName : _fullNameController.text;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -123,10 +124,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         actions: [
           TextButton(
             onPressed: _toggleEditing,
-            child: Text(
-              _isEditing ? 'Guardar cambios' : 'Editar perfil',
-              style: const TextStyle(color: Colors.redAccent),
+            style: TextButton.styleFrom(
+              foregroundColor: colorScheme.primary,
             ),
+            child: Text(_isEditing ? 'Guardar cambios' : 'Editar perfil'),
           ),
         ],
       ),
@@ -211,6 +212,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     List<TextInputFormatter>? inputFormatters,
     String? errorText,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      borderSide: BorderSide(
+        color: colorScheme.primary.withOpacity(0.3),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -218,26 +228,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Text(
             label,
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 8),
-          TextFormField(
-            controller: controller,
-            enabled: enabled,
-            keyboardType: keyboardType,
-            textCapitalization: textCapitalization,
-            onChanged: onChanged,
-            inputFormatters: inputFormatters,
-            decoration: InputDecoration(
-              filled: !enabled,
-              fillColor: Colors.grey.shade100,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-              ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                borderSide: BorderSide(
-                  color: Colors.grey.shade300,
+          IgnorePointer(
+            ignoring: !enabled,
+            child: TextFormField(
+              controller: controller,
+              readOnly: !enabled,
+              keyboardType: keyboardType,
+              textCapitalization: textCapitalization,
+              onChanged: onChanged,
+              inputFormatters: inputFormatters,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: colorScheme.surface,
+                border: border,
+                enabledBorder: border,
+                disabledBorder: border,
+                focusedBorder: border.copyWith(
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),

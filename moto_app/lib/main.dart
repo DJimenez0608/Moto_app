@@ -6,8 +6,8 @@ import 'package:moto_app/domain/providers/soat_provider.dart';
 import 'package:moto_app/domain/providers/technomechanical_provider.dart';
 import 'package:moto_app/domain/providers/travel_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
-import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 
 void main() {
@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => UserProvider()),
         ChangeNotifierProvider(create: (context) => MotorcycleProvider()),
         ChangeNotifierProvider(create: (context) => TravelProvider()),
@@ -30,11 +31,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => TechnomechanicalProvider()),
         // Aquí se pueden agregar más providers en el futuro
       ],
-      child: MaterialApp(
-        title: 'MotoApp',
-        theme: AppTheme.theme,
-        home: const SplashScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'MotoApp',
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
+            home: const SplashScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }
