@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:animated_item/animated_item.dart';
 import 'package:moto_app/domain/models/maintenance.dart';
@@ -7,6 +6,7 @@ import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:moto_app/features/auth/presentation/screens/motorcycle_detail_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/trending_screen.dart';
@@ -107,6 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMotorcycleCard(Motorcycle motorcycle, int index) {
     final heroTag = 'motorcycle_${motorcycle.id}';
     final imagePath = _getMotorcycleImagePath(index);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return GestureDetector(
       onTap: () => _openMotorcycleDetail(motorcycle, index),
@@ -120,10 +122,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: MediaQuery.of(context).size.width * 0.4,
                 height: 100,
                 margin: const EdgeInsets.all(5),
-                decoration: const BoxDecoration(
-                  color: AppColors.surfaceAlt,
-                  borderRadius: BorderRadius.all(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceVariant,
+                  borderRadius: const BorderRadius.all(
                     Radius.circular(AppConstants.borderRadius),
+                  ),
+                  border: Border.all(
+                    color: colorScheme.primary.withOpacity(0.15),
                   ),
                 ),
                 child: Hero(
@@ -146,20 +151,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Text(
                     motorcycle.make,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 5),
                   Text(
                     'Año: ${motorcycle.year}',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium,
                   ),
                   Text(
                     'Cilindrada: ${motorcycle.displacement ?? 'N/A'}cc',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium,
                   ),
                   Text(
                     'Potencia: ${motorcycle.power}hp',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: theme.textTheme.bodyMedium,
                   ),
                 ],
               ),
@@ -173,7 +178,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBody(
     MotorcycleProvider motorcycleProvider,
     MaintenanceProvider maintenanceProvider,
+    Color accentColor,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final maintenanceList = maintenanceProvider.allMaintenance;
     final errorMessage = maintenanceProvider.errorMessage;
     final motorcycleNameById = {
@@ -206,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      color: AppColors.pureWhite,
+      color: colorScheme.surface,
       child: SingleChildScrollView(
         controller: _scrollController,
         child: Padding(
@@ -266,8 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accentCoral,
-                          foregroundColor: AppColors.pureWhite,
+                          backgroundColor: accentColor,
+                          foregroundColor: colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(
                               AppConstants.borderRadius,
@@ -393,6 +401,9 @@ class _HomeScreenState extends State<HomeScreen> {
       listen: true,
     );
     final userProvider = Provider.of<UserProvider>(context, listen: true);
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: true);
+    final accentColor = themeProvider.accentColor;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar:
@@ -400,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.logout),
-                  color: AppColors.primaryBlue,
+                  color: Colors.redAccent,
                   onPressed: _handleLogout,
                 ),
                 title: Row(
@@ -429,13 +440,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Container(
                         width: 50,
                         height: 50,
-                        decoration: const BoxDecoration(
-                          color: AppColors.surfaceAlt,
+                        decoration: BoxDecoration(
+                          color: accentColor,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.person,
-                          color: AppColors.primaryBlue,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                     ),
@@ -447,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _currentTab,
         children: [
           const TrendingScreen(),
-          _buildBody(motorcycleProvider, maintenanceProvider),
+          _buildBody(motorcycleProvider, maintenanceProvider, accentColor),
           const ProfileScreen(),
         ],
       ),
@@ -477,6 +488,7 @@ Widget _buildMaintenanceCard(
   String? motorcycleName,
 ) {
   final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
   final formattedDate = maintenance.date.toIso8601String().split('T').first;
 
   return Card(
@@ -489,15 +501,15 @@ Widget _buildMaintenanceCard(
             width: MediaQuery.of(context).size.width * 0.1,
             height: 40,
             margin: const EdgeInsets.only(right: 12),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryBlue,
-              borderRadius: BorderRadius.all(
+            decoration: BoxDecoration(
+              color: colorScheme.primary,
+              borderRadius: const BorderRadius.all(
                 Radius.circular(AppConstants.borderRadius),
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.build,
-              color: AppColors.pureWhite,
+              color: colorScheme.onPrimary,
               size: 20,
             ),
           ),
@@ -527,7 +539,7 @@ Widget _buildMaintenanceCard(
             child: Text(
               '${maintenance.cost.toStringAsFixed(2)} COP',
               style: theme.textTheme.bodySmall?.copyWith(
-                color: AppColors.pureBlack,
+                color: colorScheme.onSurface,
               ),
             ),
           ),

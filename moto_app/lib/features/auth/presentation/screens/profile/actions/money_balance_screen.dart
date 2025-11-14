@@ -1,7 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
-import 'package:moto_app/core/theme/app_colors.dart';
 
 class MoneyBalanceScreen extends StatefulWidget {
   const MoneyBalanceScreen({super.key});
@@ -66,20 +65,22 @@ class _MoneyBalanceScreenState extends State<MoneyBalanceScreen> {
 
   Widget _buildAnnualSummaryCard(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accentColor = colorScheme.primary;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
         border: Border.all(
-          color: AppColors.accentCoral.withValues(alpha: 0.35),
+          color: accentColor.withOpacity(0.35),
           width: 1.6,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accentCoral.withValues(alpha: 0.2),
+            color: accentColor.withOpacity(0.2),
             blurRadius: 18,
             spreadRadius: 2.5,
           ),
@@ -129,7 +130,7 @@ class _MoneyBalanceScreenState extends State<MoneyBalanceScreen> {
               style: theme.textTheme.displaySmall?.copyWith(
                 fontSize: 40,
                 fontWeight: FontWeight.bold,
-                color: AppColors.accentCoral,
+                color: accentColor,
               ),
             ),
           ),
@@ -139,14 +140,15 @@ class _MoneyBalanceScreenState extends State<MoneyBalanceScreen> {
   }
 
   Widget _buildPieChartCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.pureWhite,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
         boxShadow: [
           BoxShadow(
-            color: AppColors.neutralText.withOpacity(0.12),
+            color: Colors.black.withOpacity(0.12),
             offset: const Offset(0, 12),
             blurRadius: 32,
             spreadRadius: -8,
@@ -225,6 +227,7 @@ class _MoneyBalanceScreenState extends State<MoneyBalanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Gastos de la moto')),
       body: SafeArea(
@@ -242,8 +245,8 @@ class _MoneyBalanceScreenState extends State<MoneyBalanceScreen> {
                 child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.accentCoral,
-                    foregroundColor: AppColors.pureWhite,
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(
                         AppConstants.borderRadius * 1.2,
@@ -287,11 +290,11 @@ class _PieBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.9),
+        color: color.withOpacity(0.9),
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.45),
+            color: color.withOpacity(0.45),
             blurRadius: 8,
             spreadRadius: 1,
           ),
@@ -326,6 +329,7 @@ class _PieLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GridView.builder(
       itemCount: slices.length,
       padding: EdgeInsets.zero,
@@ -345,14 +349,14 @@ class _PieLegend extends StatelessWidget {
           decoration: BoxDecoration(
             color:
                 isActive
-                    ? slice.color.withValues(alpha: 0.1)
-                    : AppColors.surfaceSoft,
+                    ? slice.color.withOpacity(0.1)
+                    : colorScheme.surface,
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             border: Border.all(
               color:
                   isActive
                       ? slice.color
-                      : AppColors.surfaceAlt.withOpacity(0.4),
+                      : colorScheme.surfaceVariant.withOpacity(0.4),
               width: 1.2,
             ),
           ),

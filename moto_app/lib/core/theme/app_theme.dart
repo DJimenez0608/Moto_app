@@ -3,75 +3,58 @@ import 'app_colors.dart';
 import '../constants/app_constants.dart';
 
 class AppTheme {
-  static ThemeData get theme {
+  static ThemeData buildLightTheme(Color accentColor) {
+    final colorScheme = ColorScheme(
+      brightness: Brightness.light,
+      primary: accentColor,
+      onPrimary: AppColors.pureWhite,
+      secondary: AppColors.accentCoral,
+      onSecondary: AppColors.pureWhite,
+      error: Colors.redAccent,
+      onError: AppColors.pureWhite,
+      surface: AppColors.surfaceSoft,
+      onSurface: AppColors.neutralText,
+      surfaceTint: accentColor,
+      onSurfaceVariant: AppColors.mutedText,
+    );
+
+    return _baseTheme(colorScheme, AppColors.pureWhite, _lightTextTheme);
+  }
+
+  static ThemeData buildDarkTheme(Color accentColor) {
+    final colorScheme = ColorScheme(
+      brightness: Brightness.dark,
+      primary: accentColor,
+      onPrimary: AppColors.pureWhite,
+      secondary: accentColor,
+      onSecondary: AppColors.pureWhite,
+      error: Colors.redAccent,
+      onError: AppColors.pureWhite,
+      surface: const Color(0xFF1E1E2A),
+      onSurface: AppColors.pureWhite,
+      surfaceTint: accentColor,
+      onSurfaceVariant: Colors.grey.shade400,
+    );
+
+    return _baseTheme(
+      colorScheme,
+      const Color(0xFF0F172A),
+      _darkTextTheme,
+    );
+  }
+
+  static ThemeData _baseTheme(
+    ColorScheme colorScheme,
+    Color scaffoldBackground,
+    TextTheme textTheme,
+  ) {
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: AppColors.pureWhite,
-      colorScheme: ColorScheme(
-        brightness: Brightness.light,
-        primary: AppColors.primaryBlue,
-        onPrimary: AppColors.pureWhite,
-        secondary: AppColors.accentCoral,
-        onSecondary: AppColors.pureWhite,
-        error: Colors.redAccent,
-        onError: AppColors.pureWhite,
-        surface: AppColors.surfaceSoft,
-        onSurface: AppColors.neutralText,
-        surfaceTint: AppColors.primaryBlue,
-        onSurfaceVariant: AppColors.mutedText,
-      ),
-      textTheme: const TextTheme(
-        // Títulos principales: aumentados aprox. 25%
-        displayLarge: TextStyle(
-          fontSize: 40,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-          color: AppColors.pureBlack,
-        ),
-        displayMedium: TextStyle(
-          fontSize: 35,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.5,
-          color: AppColors.pureBlack,
-        ),
-        displaySmall: TextStyle(
-          fontSize: 30,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.5,
-          color: AppColors.pureBlack,
-        ),
-        // Subtítulos: aumentados aprox. 25%
-        headlineMedium: TextStyle(
-          fontSize: 28,
-          fontWeight: FontWeight.w500,
-          color: AppColors.pureBlack,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 25,
-          fontWeight: FontWeight.w500,
-          color: AppColors.pureBlack,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 23,
-          fontWeight: FontWeight.w500,
-          color: AppColors.pureBlack,
-        ),
-        // Párrafos: 14-16px, Regular, height 1.4-1.6
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
-          height: 1.5,
-          color: AppColors.neutralText,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.normal,
-          height: 1.4,
-          color: AppColors.mutedText,
-        ),
-      ),
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: scaffoldBackground,
+      textTheme: textTheme,
       cardTheme: CardTheme(
-        color: AppColors.surfaceSoft,
+        color: colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.borderRadius),
         ),
@@ -83,37 +66,133 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          borderSide: const BorderSide(color: AppColors.primaryBlue),
+          borderSide: BorderSide(color: colorScheme.primary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-          borderSide: const BorderSide(color: AppColors.primaryBlue, width: 2),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        labelStyle: const TextStyle(color: AppColors.mutedText),
+        labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryBlue,
-          foregroundColor: AppColors.pureWhite,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.pureWhite,
-        foregroundColor: AppColors.pureBlack,
+      appBarTheme: AppBarTheme(
+        backgroundColor: scaffoldBackground,
+        foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: AppColors.pureWhite,
-        selectedItemColor: AppColors.primaryBlue,
-        unselectedItemColor: AppColors.mutedText,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: scaffoldBackground,
+        selectedItemColor: colorScheme.primary,
+        unselectedItemColor: colorScheme.onSurfaceVariant,
         elevation: 8,
         type: BottomNavigationBarType.fixed,
       ),
     );
   }
+
+  static const TextTheme _lightTextTheme = TextTheme(
+    displayLarge: TextStyle(
+      fontSize: 40,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 0.5,
+      color: AppColors.pureBlack,
+    ),
+    displayMedium: TextStyle(
+      fontSize: 35,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 0.5,
+      color: AppColors.pureBlack,
+    ),
+    displaySmall: TextStyle(
+      fontSize: 30,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+      color: AppColors.pureBlack,
+    ),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureBlack,
+    ),
+    headlineSmall: TextStyle(
+      fontSize: 25,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureBlack,
+    ),
+    titleLarge: TextStyle(
+      fontSize: 23,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureBlack,
+    ),
+    bodyLarge: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.normal,
+      height: 1.5,
+      color: AppColors.neutralText,
+    ),
+    bodyMedium: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      height: 1.4,
+      color: AppColors.mutedText,
+    ),
+  );
+
+  static const TextTheme _darkTextTheme = TextTheme(
+    displayLarge: TextStyle(
+      fontSize: 40,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 0.5,
+      color: AppColors.pureWhite,
+    ),
+    displayMedium: TextStyle(
+      fontSize: 35,
+      fontWeight: FontWeight.bold,
+      letterSpacing: 0.5,
+      color: AppColors.pureWhite,
+    ),
+    displaySmall: TextStyle(
+      fontSize: 30,
+      fontWeight: FontWeight.w600,
+      letterSpacing: 0.5,
+      color: AppColors.pureWhite,
+    ),
+    headlineMedium: TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureWhite,
+    ),
+    headlineSmall: TextStyle(
+      fontSize: 25,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureWhite,
+    ),
+    titleLarge: TextStyle(
+      fontSize: 23,
+      fontWeight: FontWeight.w500,
+      color: AppColors.pureWhite,
+    ),
+    bodyLarge: TextStyle(
+      fontSize: 16,
+      fontWeight: FontWeight.normal,
+      height: 1.5,
+      color: Colors.white70,
+    ),
+    bodyMedium: TextStyle(
+      fontSize: 14,
+      fontWeight: FontWeight.normal,
+      height: 1.4,
+      color: Colors.white60,
+    ),
+  );
 }

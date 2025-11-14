@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
-import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
@@ -56,6 +55,9 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     final motorcycles = motorcycleProvider.searchMotorcyclesByMake(
       _searchQuery,
     );
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accentColor = colorScheme.primary;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Gestionar motos')),
@@ -69,6 +71,8 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             },
           );
         },
+        backgroundColor: accentColor,
+        foregroundColor: colorScheme.onPrimary,
         child: const Icon(Icons.add),
       ),
       body: SafeArea(
@@ -85,7 +89,10 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                   controller: _searchController,
                   decoration: InputDecoration(
                     hintText: 'Buscar moto',
-                    suffixIcon: const Icon(Icons.search),
+                    suffixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(
                         AppConstants.borderRadius,
@@ -95,10 +102,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                       borderRadius: BorderRadius.circular(
                         AppConstants.borderRadius,
                       ),
-                      borderSide: const BorderSide(
-                        color: AppColors.primaryBlue,
-                        width: 1.5,
-                      ),
+                      borderSide: BorderSide(color: accentColor, width: 1.5),
                     ),
                   ),
                 ),
@@ -123,11 +127,15 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     required List<Motorcycle> filteredMotorcycles,
     required List<Motorcycle> allMotorcycles,
   }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accentColor = colorScheme.primary;
+
     if (allMotorcycles.isEmpty) {
       return Center(
         child: Text(
           'Aún no has registrado motocicletas.',
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
       );
@@ -137,7 +145,7 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       return Center(
         child: Text(
           'No encontramos motos con esa marca.',
-          style: Theme.of(context).textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
       );
@@ -182,19 +190,17 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                       width: MediaQuery.of(context).size.width * 0.34,
                       height: 94,
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceAlt,
+                        color: colorScheme.surfaceVariant,
                         borderRadius: const BorderRadius.all(
                           Radius.circular(AppConstants.borderRadius),
                         ),
                         border: Border.all(
-                          color: AppColors.accentCoral.withValues(alpha: 0.3),
+                          color: accentColor.withOpacity(0.3),
                           width: 1.4,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.accentCoral.withValues(
-                              alpha: 0.25,
-                            ),
+                            color: accentColor.withOpacity(0.2),
                             blurRadius: 7,
                             spreadRadius: 1.1,
                           ),
@@ -335,6 +341,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
 
   Widget _buildPhotoStep(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,16 +356,16 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
           Text(
             'Es con el fin de que puedas identificar la moto con facilidad, en caso de omitir ese paso se refleja un icono de motocicleta',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.mutedText,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.surfaceAlt.withValues(alpha: 0.45),
+              color: colorScheme.surfaceVariant.withOpacity(0.45),
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               border: Border.all(
-                color: AppColors.surfaceAlt.withValues(alpha: 0.7),
+                color: colorScheme.surfaceVariant.withOpacity(0.7),
               ),
             ),
             child: IntrinsicHeight(
@@ -374,7 +381,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
                   VerticalDivider(
                     width: 1,
                     thickness: 1,
-                    color: AppColors.surfaceAlt.withValues(alpha: 0.6),
+                    color: colorScheme.surfaceVariant.withOpacity(0.6),
                   ),
                   Expanded(
                     child: _GlassActionTile(
@@ -394,11 +401,10 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
 
   Widget _buildBasicInfoStep(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final inputBorder = OutlineInputBorder(
       borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-      borderSide: BorderSide(
-        color: AppColors.surfaceAlt.withValues(alpha: 0.7),
-      ),
+      borderSide: BorderSide(color: colorScheme.onSurface.withOpacity(0.2)),
     );
 
     return SingleChildScrollView(
@@ -415,7 +421,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
           Text(
             'Esta información es esencial para completar la información de tu moto',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.mutedText,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 20),
@@ -448,6 +454,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
 
   Widget _buildWellnessStep(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,7 +469,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
           Text(
             'Esta información es importante saberla para llevar un control del bienestar de tu moto, haciendo recordatorios del nuevo mantenimiento, renovación de SOAT, tecnomecánica, etc.',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.mutedText,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
@@ -556,6 +563,7 @@ class _DialogPageIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -568,7 +576,10 @@ class _DialogPageIndicator extends StatelessWidget {
           width: isActive ? 20 : 8,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(4),
-            color: isActive ? AppColors.primaryBlue : AppColors.surfaceAlt,
+            color:
+                isActive
+                    ? colorScheme.primary
+                    : colorScheme.surfaceVariant.withOpacity(0.6),
           ),
         );
       }),
@@ -591,6 +602,7 @@ class _DialogNavigationControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -606,8 +618,8 @@ class _DialogNavigationControls extends StatelessWidget {
         ElevatedButton(
           onPressed: onNext,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primaryBlue,
-            foregroundColor: AppColors.pureWhite,
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
           ),
           child: Text(currentPage == 2 ? 'Crear' : 'Siguiente'),
         ),
@@ -630,6 +642,7 @@ class _GlassActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       onTap: onTap,
@@ -638,7 +651,7 @@ class _GlassActionTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 32, color: AppColors.primaryBlue),
+            Icon(icon, size: 32, color: colorScheme.primary),
             const SizedBox(height: 12),
             Text(
               label,
@@ -691,8 +704,8 @@ class _LabeledTextField extends StatelessWidget {
             hintText: hintText,
             border: border,
             focusedBorder: border.copyWith(
-              borderSide: const BorderSide(
-                color: AppColors.primaryBlue,
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
                 width: 1.5,
               ),
             ),
@@ -716,6 +729,8 @@ class _DateSelectionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accentColor = colorScheme.primary;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -726,15 +741,10 @@ class _DateSelectionRow extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
             ),
-            side: BorderSide(
-              color: AppColors.primaryBlue.withValues(alpha: 0.4),
-            ),
+            side: BorderSide(color: accentColor.withOpacity(0.4)),
             padding: const EdgeInsets.all(12),
           ),
-          child: const Icon(
-            Icons.calendar_today_outlined,
-            color: AppColors.primaryBlue,
-          ),
+          child: Icon(Icons.calendar_today_outlined, color: accentColor),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -743,17 +753,17 @@ class _DateSelectionRow extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppConstants.borderRadius),
               border: Border.all(
-                color: AppColors.surfaceAlt.withValues(alpha: 0.8),
+                color: colorScheme.surfaceVariant.withOpacity(0.8),
               ),
-              color: AppColors.surfaceSoft,
+              color: Colors.white,
             ),
             child: Text(
               displayText,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color:
                     displayText == 'Elegir una fecha'
-                        ? AppColors.mutedText
-                        : AppColors.pureBlack,
+                        ? colorScheme.onSurfaceVariant
+                        : colorScheme.onSurface,
               ),
             ),
           ),
@@ -792,8 +802,8 @@ extension on _AddMotorcycleScreenState {
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.accentCoral,
-                foregroundColor: AppColors.pureWhite,
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(
                     AppConstants.borderRadius,
