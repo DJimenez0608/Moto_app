@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
 import 'package:moto_app/features/auth/presentation/screens/home_screen.dart';
+import 'package:moto_app/core/utils/input_validators.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../widgets/custom_button.dart';
@@ -26,6 +27,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       TextEditingController();
 
   String? _passwordError;
+  String? _emailError;
 
   @override
   void initState() {
@@ -106,6 +108,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
+  void _validateEmail() {
+    setState(() {
+      _emailError = InputValidators.validateEmail(_emailController.text);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -176,6 +184,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 CustomTextField(
                                   label: 'full name',
                                   controller: _fullNameController,
+                                  textCapitalization: TextCapitalization.words,
                                 ),
                               ],
                             ),
@@ -188,10 +197,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 CustomTextField(
                                   label: 'email',
                                   controller: _emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  onChanged: (_) => _validateEmail(),
                                 ),
+                                if (_emailError != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: Text(
+                                      _emailError!,
+                                      style: const TextStyle(
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+                                  ),
                                 CustomTextField(
                                   label: 'phone number',
                                   controller: _phoneNumberController,
+                                  keyboardType: TextInputType.phone,
                                 ),
                               ],
                             ),
@@ -269,7 +291,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 text: 'Registrarse',
                                 onPressed: () async {
                                   _validatePassword();
-                                  if (_passwordError == null) {
+                                    _validateEmail();
+                                    if (_passwordError == null &&
+                                        _emailError == null) {
                                     // Por el momento no hace nada
                                     final currentContext = context;
                                     bool isSignedUp = await UserHttpService()
