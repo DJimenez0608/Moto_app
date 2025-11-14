@@ -50,4 +50,34 @@ class MotorcycleHttpService {
       throw Exception('Error del servidor: ${response.statusCode}');
     }
   }
+
+  Future<String> deleteMotorcycle(int id) async {
+    final uri = Uri.parse('$_baseUrl/motorcycles/$id');
+
+    try {
+      final response = await http.delete(uri);
+
+      if (response.statusCode == 200) {
+        return 'Motocicleta eliminada correctamente';
+      } else {
+        final body = response.body.isNotEmpty ? response.body : null;
+        String message = 'Moto no eliminada';
+
+        if (body != null) {
+          try {
+            final data = jsonDecode(body);
+            if (data is Map && data['message'] is String) {
+              message = data['message'] as String;
+            }
+          } catch (_) {
+            message = body;
+          }
+        }
+
+        throw Exception(message);
+      }
+    } catch (error) {
+      throw Exception('Error eliminando la moto: $error');
+    }
+  }
 }

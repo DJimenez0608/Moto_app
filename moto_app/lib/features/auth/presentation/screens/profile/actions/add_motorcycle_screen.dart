@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:provider/provider.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
+import 'package:moto_app/domain/providers/user_provider.dart';
 
 class AddMotorcycleScreen extends StatefulWidget {
   const AddMotorcycleScreen({super.key});
@@ -58,7 +60,15 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Gestionar motos')),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) {
+              return const AddMotorcycleDialog();
+            },
+          );
+        },
         child: const Icon(Icons.add),
       ),
       body: SafeArea(
@@ -149,7 +159,11 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
             extentRatio: 0.198,
             children: [
               SlidableAction(
-                onPressed: (_) {},
+                onPressed:
+                    (_) => _confirmDelete(
+                      context: context,
+                      motorcycle: motorcycle,
+                    ),
                 backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
                 icon: Icons.delete,
@@ -221,5 +235,603 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
         );
       },
     );
+  }
+}
+
+class AddMotorcycleDialog extends StatefulWidget {
+  const AddMotorcycleDialog({super.key});
+
+  @override
+  State<AddMotorcycleDialog> createState() => _AddMotorcycleDialogState();
+}
+
+class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
+  late final PageController _pageController;
+  int _currentPage = 0;
+  final TextEditingController _makeController = TextEditingController();
+  final TextEditingController _modelController = TextEditingController();
+  final TextEditingController _yearController = TextEditingController();
+  DateTime? _soatDate;
+  DateTime? _tecnomecanicaDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _makeController.dispose();
+    _modelController.dispose();
+    _yearController.dispose();
+    super.dispose();
+  }
+
+  void _goToPage(int page) {
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final double dialogWidth = mediaQuery.size.width * 0.85;
+    final double dialogHeight = (mediaQuery.size.height * 0.65) - 40;
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
+      ),
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              _DialogPageIndicator(currentPage: _currentPage, totalPages: 3),
+              const SizedBox(height: 20),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  children: [
+                    _buildPhotoStep(context),
+                    _buildBasicInfoStep(context),
+                    _buildWellnessStep(context),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              _DialogNavigationControls(
+                currentPage: _currentPage,
+                onCancel: () => Navigator.of(context).pop(),
+                onNext: () {
+                  if (_currentPage < 2) {
+                    _goToPage(_currentPage + 1);
+                  }
+                },
+                onPrevious: () {
+                  if (_currentPage > 0) {
+                    _goToPage(_currentPage - 1);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoStep(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Toma foto de tu moto',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Es con el fin de que puedas identificar la moto con facilidad, en caso de omitir ese paso se refleja un icono de motocicleta',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.mutedText,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.surfaceAlt.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(
+                color: AppColors.surfaceAlt.withValues(alpha: 0.7),
+              ),
+            ),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _GlassActionTile(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Tomar foto',
+                      onTap: () {},
+                    ),
+                  ),
+                  VerticalDivider(
+                    width: 1,
+                    thickness: 1,
+                    color: AppColors.surfaceAlt.withValues(alpha: 0.6),
+                  ),
+                  Expanded(
+                    child: _GlassActionTile(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Escoger de galería',
+                      onTap: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBasicInfoStep(BuildContext context) {
+    final theme = Theme.of(context);
+    final inputBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      borderSide: BorderSide(
+        color: AppColors.surfaceAlt.withValues(alpha: 0.7),
+      ),
+    );
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Información básica de tu moto',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Esta información es esencial para completar la información de tu moto',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.mutedText,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _LabeledTextField(
+            label: 'Marca',
+            controller: _makeController,
+            hintText: 'Bajaj',
+            border: inputBorder,
+          ),
+          const SizedBox(height: 16),
+          _LabeledTextField(
+            label: 'Modelo',
+            controller: _modelController,
+            hintText: 'eje: Pulsar 160 ns',
+            border: inputBorder,
+          ),
+          const SizedBox(height: 16),
+          _LabeledTextField(
+            label: 'Año',
+            controller: _yearController,
+            hintText: 'eje: 2023',
+            border: inputBorder,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWellnessStep(BuildContext context) {
+    final theme = Theme.of(context);
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Control del bienestar de tu moto',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Esta información es importante saberla para llevar un control del bienestar de tu moto, haciendo recordatorios del nuevo mantenimiento, renovación de SOAT, tecnomecánica, etc.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: AppColors.mutedText,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Column(
+            children: [
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.85,
+                child: Text(
+                  'Fecha compra de SOAT:',
+                  textAlign: TextAlign.left,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              _DateSelectionRow(
+                displayText: _formatDate(_soatDate),
+                onPressed:
+                    () => _selectDate(
+                      currentValue: _soatDate,
+                      onDateSelected: (value) => _soatDate = value,
+                    ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.85,
+                child: Text(
+                  'Fecha última Tecnomecánica:',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              _DateSelectionRow(
+                displayText: _formatDate(_tecnomecanicaDate),
+                onPressed:
+                    () => _selectDate(
+                      currentValue: _tecnomecanicaDate,
+                      onDateSelected: (value) => _tecnomecanicaDate = value,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _selectDate({
+    required DateTime? currentValue,
+    required void Function(DateTime date) onDateSelected,
+  }) async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 2, now.month, now.day);
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: currentValue ?? now,
+      firstDate: firstDate,
+      lastDate: now,
+    );
+
+    if (selectedDate != null) {
+      setState(() {
+        onDateSelected(selectedDate);
+      });
+    }
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Elegir una fecha';
+
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    final year = date.year.toString();
+    return '$day/$month/$year';
+  }
+}
+
+class _DialogPageIndicator extends StatelessWidget {
+  const _DialogPageIndicator({
+    required this.currentPage,
+    required this.totalPages,
+  });
+
+  final int currentPage;
+  final int totalPages;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(totalPages, (index) {
+        final isActive = index == currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 8,
+          width: isActive ? 20 : 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: isActive ? AppColors.primaryBlue : AppColors.surfaceAlt,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _DialogNavigationControls extends StatelessWidget {
+  const _DialogNavigationControls({
+    required this.currentPage,
+    required this.onCancel,
+    required this.onNext,
+    required this.onPrevious,
+  });
+
+  final int currentPage;
+  final VoidCallback onCancel;
+  final VoidCallback onNext;
+  final VoidCallback onPrevious;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        TextButton(
+          onPressed: currentPage == 0 ? onCancel : onPrevious,
+          child: Text(currentPage == 0 ? 'Cancelar' : 'Anterior'),
+        ),
+        if (currentPage == 0) ...[
+          const SizedBox(width: 8),
+          TextButton(onPressed: onNext, child: const Text('Omitir')),
+        ],
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: onNext,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primaryBlue,
+            foregroundColor: AppColors.pureWhite,
+          ),
+          child: Text(currentPage == 2 ? 'Crear' : 'Siguiente'),
+        ),
+      ],
+    );
+  }
+}
+
+class _GlassActionTile extends StatelessWidget {
+  const _GlassActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 32, color: AppColors.primaryBlue),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LabeledTextField extends StatelessWidget {
+  const _LabeledTextField({
+    required this.label,
+    required this.controller,
+    required this.hintText,
+    required this.border,
+    this.keyboardType,
+    this.inputFormatters,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final String hintText;
+  final InputBorder border;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          decoration: InputDecoration(
+            hintText: hintText,
+            border: border,
+            focusedBorder: border.copyWith(
+              borderSide: const BorderSide(
+                color: AppColors.primaryBlue,
+                width: 1.5,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DateSelectionRow extends StatelessWidget {
+  const _DateSelectionRow({required this.displayText, required this.onPressed});
+
+  final String displayText;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(width: 12),
+        OutlinedButton(
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+            ),
+            side: BorderSide(
+              color: AppColors.primaryBlue.withValues(alpha: 0.4),
+            ),
+            padding: const EdgeInsets.all(12),
+          ),
+          child: const Icon(
+            Icons.calendar_today_outlined,
+            color: AppColors.primaryBlue,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              border: Border.all(
+                color: AppColors.surfaceAlt.withValues(alpha: 0.8),
+              ),
+              color: AppColors.surfaceSoft,
+            ),
+            child: Text(
+              displayText,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color:
+                    displayText == 'Elegir una fecha'
+                        ? AppColors.mutedText
+                        : AppColors.pureBlack,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+extension on _AddMotorcycleScreenState {
+  Future<void> _confirmDelete({
+    required BuildContext context,
+    required Motorcycle motorcycle,
+  }) async {
+    final theme = Theme.of(context);
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(
+              AppConstants.borderRadius * 1.5,
+            ),
+          ),
+          title: const Text(
+            '¿Está seguro de querer eliminar esta motocicleta?',
+          ),
+          content: const Text(
+            'Al eliminar esta motocicleta se eliminará todo lo que esté relacionado a ella (mantenimientos, viajes, etc). Lo único que se mantendrá serán los gastos.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentCoral,
+                foregroundColor: AppColors.pureWhite,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                ),
+              ),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    final motorcycleProvider = context.read<MotorcycleProvider>();
+    final userProvider = context.read<UserProvider>();
+
+    try {
+      final message = await motorcycleProvider.deleteMotorcycle(
+        motorcycleId: motorcycle.id,
+        userProvider: userProvider,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
+    }
   }
 }

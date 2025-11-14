@@ -23,9 +23,7 @@ class ProfileScreen extends StatelessWidget {
     final fullName = user?.fullName ?? 'Usuario invitado';
     final motorcycleCount = motorcycleProvider.motorcycles.length;
     void openScreen(Widget screen) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => screen),
-      );
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
     }
 
     return Scaffold(
@@ -59,7 +57,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     ProfileActionTile(
-                      title: 'Agregar moto',
+                      title: 'Gestionar motos',
                       icon: Icons.add,
                       onTap: () => openScreen(const AddMotorcycleScreen()),
                     ),
@@ -189,24 +187,7 @@ class _StatsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    Widget buildStat(String value, String label) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: AppColors.primaryBlue,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: theme.textTheme.bodyMedium),
-        ],
-      );
-    }
-
     final motorcyclesValue = hasUser ? '$motorcycleCount' : '--';
-    final racesValue = hasUser ? '0' : '--';
 
     return SizedBox(
       height: 100,
@@ -217,27 +198,36 @@ class _StatsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              buildStat(motorcyclesValue, 'Motos'),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    'Motos registradas',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(fontSize: 20),
+                  ),
+                ),
+              ),
               const SizedBox(
-                height: 48,
+                height: 54,
                 child: VerticalDivider(
-                  thickness: 1,
+                  thickness: 3,
                   color: AppColors.surfaceAlt,
                 ),
               ),
-              buildStat(racesValue, '# Carreras'),
-              const SizedBox(
-                height: 48,
-                child: VerticalDivider(
-                  thickness: 1,
-                  color: AppColors.surfaceAlt,
+              Expanded(
+                child: Center(
+                  child: Text(
+                    motorcyclesValue,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: AppColors.primaryBlue,
+                    ),
+                  ),
                 ),
               ),
-              buildStat(racesValue, 'Ganadas'),
             ],
           ),
         ),

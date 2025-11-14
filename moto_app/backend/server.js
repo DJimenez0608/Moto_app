@@ -237,11 +237,66 @@ app.post("/motorcycle/:id/observations", (req, res) => {
 app.post("/users/:id/motorcycles", (req, res) => {
 
     const userId = req.params.id
+    //NECESITO RECUPERAR TODOS LOS VALORES
+    const addNewMoto = db.query("INSERT     ", []) 
     
 }) 
 //REGISTRAR VIAJE DE USUARIO 
 app.post("/users/:id/travels", (req, res) => {
     
+})
+
+// ELIMINAR MOTOCICLETA
+app.delete("/motorcycles/:id", async (req, res) => {
+    const motorcycleId = req.params.id
+
+    try {
+        await db.query("BEGIN")
+
+        // Eliminar registros relacionados
+        await db.query(
+            "DELETE FROM maintenance WHERE motorcycle_id = $1",
+            [motorcycleId]
+        )
+        await db.query(
+            "DELETE FROM observations WHERE motorcycle_id = $1",
+            [motorcycleId]
+        )
+        await db.query(
+            "DELETE FROM technomechanical WHERE motorcycle_id = $1",
+            [motorcycleId]
+        )
+        await db.query(
+            "DELETE FROM soat WHERE motorcycle_id = $1",
+            [motorcycleId]
+        )
+
+        const result = await db.query(
+            "DELETE FROM motorcycles WHERE id = $1 RETURNING id",
+            [motorcycleId]
+        )
+
+        await db.query("COMMIT")
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Motocicleta no encontrada",
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Motocicleta eliminada con éxito",
+        })
+    } catch (error) {
+        await db.query("ROLLBACK")
+        console.error("Error eliminando motocicleta:", error)
+        res.status(500).json({
+            success: false,
+            message: "Error al eliminar la motocicleta",
+        })
+    }
 })
 
 
