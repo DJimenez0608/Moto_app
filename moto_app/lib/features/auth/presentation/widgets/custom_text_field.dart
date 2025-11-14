@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -6,6 +7,11 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
   final bool obscureText;
   final EdgeInsetsGeometry? margin;
+  final TextInputType? keyboardType;
+  final ValueChanged<String>? onChanged;
+  final bool enabled;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomTextField({
     super.key,
@@ -13,6 +19,11 @@ class CustomTextField extends StatelessWidget {
     required this.controller,
     this.obscureText = false,
     this.margin,
+    this.keyboardType,
+    this.onChanged,
+    this.enabled = true,
+    this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
   });
 
   @override
@@ -26,6 +37,11 @@ class CustomTextField extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         obscureText: obscureText,
+        keyboardType: keyboardType,
+        onChanged: onChanged,
+        enabled: enabled,
+        textCapitalization: textCapitalization,
+        inputFormatters: inputFormatters,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(
