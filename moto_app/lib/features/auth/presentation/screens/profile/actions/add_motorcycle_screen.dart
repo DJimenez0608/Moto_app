@@ -1,11 +1,17 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
+import 'package:moto_app/domain/models/soat.dart';
+import 'package:moto_app/domain/models/technomechanical.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/features/auth/data/datasources/motorcycle_http_service.dart';
 
 class AddMotorcycleScreen extends StatefulWidget {
   const AddMotorcycleScreen({super.key});
@@ -257,8 +263,14 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
   final TextEditingController _makeController = TextEditingController();
   final TextEditingController _modelController = TextEditingController();
   final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _soatCostController = TextEditingController();
+  final TextEditingController _technomechanicalCostController =
+      TextEditingController();
   DateTime? _soatDate;
   DateTime? _tecnomecanicaDate;
+  File? _selectedImage;
+  bool _cameraPermissionDenied = false;
+  bool _showPermissionError = false;
 
   @override
   void initState() {
@@ -272,6 +284,8 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
     _makeController.dispose();
     _modelController.dispose();
     _yearController.dispose();
+    _soatCostController.dispose();
+    _technomechanicalCostController.dispose();
     super.dispose();
   }
 
@@ -321,9 +335,12 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
               _DialogNavigationControls(
                 currentPage: _currentPage,
                 onCancel: () => Navigator.of(context).pop(),
-                onNext: () {
+                onNext: () async {
                   if (_currentPage < 2) {
                     _goToPage(_currentPage + 1);
+                  } else {
+                    // Página 2: Crear motocicleta
+                    await _createMotorcycle(context);
                   }
                 },
                 onPrevious: () {
@@ -360,6 +377,29 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
             ),
           ),
           const SizedBox(height: 24),
+          if (_selectedImage != null) ...[
+            Center(
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                  border: Border.all(
+                    color: colorScheme.surfaceVariant.withOpacity(0.7),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                  child: Image.file(_selectedImage!, fit: BoxFit.cover),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           Container(
             decoration: BoxDecoration(
               color: colorScheme.surfaceVariant.withOpacity(0.45),
@@ -375,7 +415,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
                     child: _GlassActionTile(
                       icon: Icons.camera_alt_outlined,
                       label: 'Tomar foto',
-                      onTap: () {},
+                      onTap: _requestCameraPermission,
                     ),
                   ),
                   VerticalDivider(
@@ -394,6 +434,19 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
               ),
             ),
           ),
+          if (_showPermissionError) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text(
+                'Acceso a cámara denegado: Para agregar una foto de la motocicleta hágalo con el botón "Escoger de galería" o diríjase a las configuraciones de la aplicación y habilite el permiso manualmente',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                ),
+                textAlign: TextAlign.left,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -495,6 +548,24 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
                       onDateSelected: (value) => _soatDate = value,
                     ),
               ),
+              const SizedBox(height: 16),
+              _LabeledTextField(
+                label: 'Costo (COP)',
+                controller: _soatCostController,
+                hintText: '0',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                  borderSide: BorderSide(
+                    color: colorScheme.onSurface.withOpacity(0.2),
+                  ),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: MediaQuery.of(context).size.width * 0.85,
@@ -514,6 +585,24 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
                       currentValue: _tecnomecanicaDate,
                       onDateSelected: (value) => _tecnomecanicaDate = value,
                     ),
+              ),
+              const SizedBox(height: 16),
+              _LabeledTextField(
+                label: 'Costo (COP)',
+                controller: _technomechanicalCostController,
+                hintText: '0',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(
+                    AppConstants.borderRadius,
+                  ),
+                  borderSide: BorderSide(
+                    color: colorScheme.onSurface.withOpacity(0.2),
+                  ),
+                ),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
               ),
             ],
           ),
@@ -549,6 +638,188 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
     final month = date.month.toString().padLeft(2, '0');
     final year = date.year.toString();
     return '$day/$month/$year';
+  }
+
+  Future<void> _requestCameraPermission() async {
+    final status = await Permission.camera.status;
+
+    if (status.isDenied) {
+      // Primera vez que se solicita o se denegó previamente
+      final result = await Permission.camera.request();
+
+      if (result.isDenied) {
+        // Se denegó nuevamente
+        if (!_cameraPermissionDenied) {
+          // Primera denegación: mostrar mensaje explicativo
+          _cameraPermissionDenied = true;
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Es importante otorgar el permiso de cámara para poder tomar una foto de la motocicleta que deseas registrar.',
+              ),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        } else {
+          // Segunda denegación: mostrar error en rojo
+          setState(() {
+            _showPermissionError = true;
+          });
+        }
+      } else if (result.isPermanentlyDenied) {
+        // Permiso permanentemente denegado
+        setState(() {
+          _showPermissionError = true;
+        });
+      } else if (result.isGranted) {
+        // Permiso otorgado
+        setState(() {
+          _cameraPermissionDenied = false;
+          _showPermissionError = false;
+        });
+        await _takePhoto();
+      }
+    } else if (status.isPermanentlyDenied) {
+      // Ya estaba permanentemente denegado
+      setState(() {
+        _showPermissionError = true;
+      });
+    } else if (status.isGranted) {
+      // Permiso ya otorgado
+      await _takePhoto();
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 85,
+    );
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
+  Motorcycle _buildMotorcycleModel(int userId) {
+    return Motorcycle(
+      id: 0, // ID temporal, se asignará en el backend
+      make:
+          _makeController.text.isNotEmpty ? _makeController.text : 'Sin marca',
+      model:
+          _modelController.text.isNotEmpty
+              ? _modelController.text
+              : 'Sin modelo',
+      year:
+          _yearController.text.isNotEmpty
+              ? int.parse(_yearController.text)
+              : DateTime.now().year,
+      power: 100,
+      torque: 50,
+      type: 'Standard',
+      displacement: null,
+      fuelCapacity: '10L',
+      weight: 150,
+      userId: userId,
+    );
+  }
+
+  Soat _buildSoatModel() {
+    final now = _soatDate ?? DateTime.now();
+    final endDate = DateTime(now.year + 1, now.month, now.day);
+    final cost =
+        _soatCostController.text.isNotEmpty
+            ? double.parse(_soatCostController.text)
+            : 0.0;
+
+    return Soat(
+      id: 0, // ID temporal, se asignará en el backend
+      motorcycleId: 0, // ID temporal, se asignará después de crear la moto
+      startDate: now,
+      endDate: endDate,
+      cost: cost,
+    );
+  }
+
+  Technomechanical _buildTechnomechanicalModel() {
+    final now = _tecnomecanicaDate ?? DateTime.now();
+    final endDate = DateTime(now.year + 1, now.month, now.day);
+    final cost =
+        _technomechanicalCostController.text.isNotEmpty
+            ? double.parse(_technomechanicalCostController.text)
+            : 0.0;
+
+    return Technomechanical(
+      id: 0, // ID temporal, se asignará en el backend
+      motorcycleId: 0, // ID temporal, se asignará después de crear la moto
+      startDate: now,
+      endDate: endDate,
+      cost: cost,
+    );
+  }
+
+  Future<void> _createMotorcycle(BuildContext context) async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final motorcycleProvider = Provider.of<MotorcycleProvider>(
+      context,
+      listen: false,
+    );
+
+    if (userProvider.user == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se pudo registrar la moto, inténtelo en otro momento',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Construir modelos
+      final motorcycle = _buildMotorcycleModel(userProvider.user!.id);
+      final soat = _buildSoatModel();
+      final technomechanical = _buildTechnomechanicalModel();
+
+      // Llamar al servicio HTTP
+      final httpService = MotorcycleHttpService();
+      final message = await httpService.addMotorcycle(
+        userId: userProvider.user!.id,
+        motorcycleData: motorcycle.toJson(),
+        soatData: soat.toJson(),
+        technomechanicalData: technomechanical.toJson(),
+      );
+
+      if (!mounted) return;
+
+      // Mostrar SnackBar de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green),
+      );
+
+      // Refrescar lista de motocicletas
+      await motorcycleProvider.getMotorcycles(userProvider.user!.id);
+
+      // Cerrar diálogo
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'No se pudo registrar la moto, inténtelo en otro momento',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
 
@@ -755,7 +1026,7 @@ class _DateSelectionRow extends StatelessWidget {
               border: Border.all(
                 color: colorScheme.surfaceVariant.withOpacity(0.8),
               ),
-              color: Colors.white,
+              color: colorScheme.surface,
             ),
             child: Text(
               displayText,

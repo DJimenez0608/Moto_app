@@ -234,12 +234,85 @@ app.post("/motorcycle/:id/observations", (req, res) => {
     
 })
 //REGISTRAR MOTO DE USUARIO
-app.post("/users/:id/motorcycles", (req, res) => {
+app.post("/users/:id/motorcycles", async (req, res) => {
+    const userId = req.params.id;
 
-    const userId = req.params.id
-    //NECESITO RECUPERAR TODOS LOS VALORES
-    const addNewMoto = db.query("INSERT     ", []) 
-    
+    try {
+        // Verificar que el usuario exista
+        const userExist = await db.query(
+            "SELECT * FROM users WHERE id = $1",
+            [userId]
+        );
+
+        if (userExist.rows.length < 1) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no encontrado"
+            });
+        }
+
+        // Extraer datos del cuerpo de la petición
+        const { motorcycle, soat, technomechanical } = req.body;
+
+        if (!motorcycle || !soat || !technomechanical) {
+            return res.status(400).json({
+                success: false,
+                message: "Faltan datos requeridos"
+            });
+        }
+
+        // Insertar en tabla motorcycles
+        const motorcycleResult = await db.query(
+            "INSERT INTO motorcycles (make, model, year, power, torque, type, displacement, fuel_capacity, weight, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id",
+            [
+                motorcycle.make,
+                motorcycle.model,
+                motorcycle.year,
+                motorcycle.power,
+                motorcycle.torque,
+                motorcycle.type,
+                motorcycle.displacement || null,
+                motorcycle.fuel_capacity,
+                motorcycle.weight,
+                userId
+            ]
+        );
+
+        const motorcycleId = motorcycleResult.rows[0].id;
+
+        // Insertar en tabla soat
+        await db.query(
+            "INSERT INTO soat (motorcycle_id, start_date, end_date, cost) VALUES ($1, $2, $3, $4)",
+            [
+                motorcycleId,
+                soat.start_date,
+                soat.end_date,
+                soat.cost
+            ]
+        );
+
+        // Insertar en tabla technomechanical
+        await db.query(
+            "INSERT INTO technomechanical (motorcycle_id, start_date, end_date, cost) VALUES ($1, $2, $3, $4)",
+            [
+                motorcycleId,
+                technomechanical.start_date,
+                technomechanical.end_date,
+                technomechanical.cost
+            ]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "Motocicleta registrada exitosamente"
+        });
+    } catch (error) {
+        console.error("Error al registrar motocicleta:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar la motocicleta. Inténtelo en otro momento"
+        });
+    }
 }) 
 //REGISTRAR VIAJE DE USUARIO 
 app.post("/users/:id/travels", (req, res) => {

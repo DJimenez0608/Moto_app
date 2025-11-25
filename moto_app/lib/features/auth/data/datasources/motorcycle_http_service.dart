@@ -80,4 +80,59 @@ class MotorcycleHttpService {
       throw Exception('Error eliminando la moto: $error');
     }
   }
+
+  Future<String> addMotorcycle({
+    required int userId,
+    required Map<String, dynamic> motorcycleData,
+    required Map<String, dynamic> soatData,
+    required Map<String, dynamic> technomechanicalData,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/users/$userId/motorcycles');
+
+    try {
+      final body = jsonEncode({
+        'motorcycle': motorcycleData,
+        'soat': soatData,
+        'technomechanical': technomechanicalData,
+      });
+
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: body,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        if (responseData is Map && responseData['message'] != null) {
+          return responseData['message'] as String;
+        }
+        return 'Motocicleta registrada exitosamente';
+      } else {
+        final responseBody = response.body.isNotEmpty ? response.body : null;
+        String errorMessage =
+            'No se pudo registrar la moto, inténtelo en otro momento';
+
+        if (responseBody != null) {
+          try {
+            final data = jsonDecode(responseBody);
+            if (data is Map && data['message'] != null) {
+              errorMessage = data['message'] as String;
+            } else {
+              errorMessage = responseBody;
+            }
+          } catch (_) {
+            errorMessage = responseBody;
+          }
+        }
+
+        throw Exception(errorMessage);
+      }
+    } catch (error) {
+      if (error is Exception) {
+        rethrow;
+      }
+      throw Exception('Error al registrar la moto: $error');
+    }
+  }
 }
