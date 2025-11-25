@@ -97,6 +97,33 @@ class AppTheme {
         elevation: 8,
         type: BottomNavigationBarType.fixed,
       ),
+      dialogTheme: DialogTheme(
+        backgroundColor: colorScheme.surface,
+        surfaceTintColor: colorScheme.surfaceTint,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: colorScheme.surface,
+        headerBackgroundColor: colorScheme.primary,
+        headerForegroundColor: colorScheme.onPrimary,
+        dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.onPrimary;
+          }
+          return colorScheme.onSurface;
+        }),
+        dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primary;
+          }
+          return Colors.transparent;
+        }),
+        weekdayStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+        yearStyle: TextStyle(color: colorScheme.onSurface),
+        dayStyle: TextStyle(color: colorScheme.onSurface),
+      ),
     );
   }
 
