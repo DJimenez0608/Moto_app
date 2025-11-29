@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
   // Border radius
@@ -26,5 +27,13 @@ class AppConstants {
     } else {
       return 'http://localhost:3000';
     }
+  }
+
+  static String get serApiBaseUrl {
+    return 'https://serpapi.com/search.json?engine=google_news';
+  }
+
+  static String? get serApiKey {
+    return dotenv.env['SERAPI_KEY'];
   }
 }

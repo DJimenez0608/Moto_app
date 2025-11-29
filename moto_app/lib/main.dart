@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
+import 'package:moto_app/domain/providers/news_provider.dart';
 import 'package:moto_app/domain/providers/observation_provider.dart';
 import 'package:moto_app/domain/providers/soat_provider.dart';
 import 'package:moto_app/domain/providers/technomechanical_provider.dart';
@@ -10,7 +12,8 @@ import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: '.env');
   runApp(const MyApp());
 }
 
@@ -29,6 +32,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => MaintenanceProvider()),
         ChangeNotifierProvider(create: (context) => SoatProvider()),
         ChangeNotifierProvider(create: (context) => TechnomechanicalProvider()),
+        ChangeNotifierProvider(create: (context) => NewsProvider()),
         // Aquí se pueden agregar más providers en el futuro
       ],
       child: Consumer<ThemeProvider>(

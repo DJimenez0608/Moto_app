@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:animated_item/animated_item.dart';
 import 'package:moto_app/domain/models/maintenance.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
+import 'package:moto_app/domain/providers/news_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:moto_app/features/auth/presentation/screens/motorcycle_detail_screen.dart';
@@ -32,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadMotorcycles();
+    _loadNews();
   }
 
   Future<void> _loadMotorcycles() async {
@@ -67,6 +70,16 @@ class _HomeScreenState extends State<HomeScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al cargar datos: ${e.toString()}')),
       );
+    }
+  }
+
+  Future<void> _loadNews() async {
+    final newsProvider = Provider.of<NewsProvider>(context, listen: false);
+    try {
+      await newsProvider.loadNews();
+    } catch (e) {
+      // No mostrar error para no molestar al usuario
+      // Las noticias son opcionales
     }
   }
 
@@ -149,10 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    motorcycle.make,
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  Text(motorcycle.make, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 5),
                   Text(
                     'Año: ${motorcycle.year}',
@@ -223,30 +233,166 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // PageView con noticias
-              SizedBox(
-                height: 220,
-                width: double.infinity,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: 4,
-                  itemBuilder: (context, index) {
-                    return AnimatedPage(
+              Consumer<NewsProvider>(
+                builder: (context, newsProvider, _) {
+                  final newsList = newsProvider.news;
+                  final itemCount = newsList.isEmpty ? 1 : newsList.length;
+
+                  return SizedBox(
+                    height: 220,
+                    width: double.infinity,
+                    child: PageView.builder(
                       controller: _pageController,
-                      index: index,
-                      effect: const FadeEffect(),
-                      child: Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 5),
-                        elevation: 4,
-                        child: Center(
-                          child: Text(
-                            'Noticia ${index + 1}',
-                            style: Theme.of(context).textTheme.titleLarge,
+                      itemCount: itemCount,
+                      itemBuilder: (context, index) {
+                        if (newsList.isEmpty) {
+                          return AnimatedPage(
+                            controller: _pageController,
+                            index: index,
+                            effect: const FadeEffect(),
+                            child: Card(
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              elevation: 4,
+                              child: Center(
+                                child: Text(
+                                  'Cargando noticias...',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+
+                        final news = newsList[index];
+                        return AnimatedPage(
+                          controller: _pageController,
+                          index: index,
+                          effect: const FadeEffect(),
+                          child: Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.borderRadius,
+                              ),
+                            ),
+                            child: GestureDetector(
+                              onTap: () async {
+                                try {
+                                  final uri = Uri.parse(news.link);
+                                  if (!await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.platformDefault,
+                                  )) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'No se pudo abrir el enlace de la noticia',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: ${e.toString()}'),
+                                    ),
+                                  );
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(
+                                    AppConstants.borderRadius,
+                                  ),
+                                  image: DecorationImage(
+                                    image: NetworkImage(news.thumbnailSmall),
+                                    fit: BoxFit.cover,
+                                    onError: (exception, stackTrace) {
+                                      // Manejar error de carga de imagen
+                                    },
+                                  ),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    // Gradiente para legibilidad del título
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            AppConstants.borderRadius,
+                                          ),
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              Colors.black.withOpacity(0.7),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Fecha arriba derecha
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.6),
+                                          borderRadius: BorderRadius.circular(
+                                            AppConstants.borderRadius,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          news.formattedDate,
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Título abajo izquierda
+                                    Positioned(
+                                      bottom: 8,
+                                      left: 8,
+                                      right: 8,
+                                      child: Text(
+                                        news.title,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.5),
+                                                  blurRadius: 4,
+                                                ),
+                                              ],
+                                            ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 30),
               // Row con texto y botón
@@ -444,10 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: accentColor,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
-                          Icons.person,
-                          color: colorScheme.onPrimary,
-                        ),
+                        child: Icon(Icons.person, color: colorScheme.onPrimary),
                       ),
                     ),
                   ],
@@ -507,11 +650,7 @@ Widget _buildMaintenanceCard(
                 Radius.circular(AppConstants.borderRadius),
               ),
             ),
-            child: Icon(
-              Icons.build,
-              color: colorScheme.onPrimary,
-              size: 20,
-            ),
+            child: Icon(Icons.build, color: colorScheme.onPrimary, size: 20),
           ),
           Expanded(
             child: Column(
