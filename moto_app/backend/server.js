@@ -88,8 +88,44 @@ app.get("/users/:id/travels", (req, res) => {
     
 })
 //OBTENER LAS OBSERVACIONES DE UNA MOTO
-app.get("/motorcycle/:id/observations", (req, res) => {
-    
+app.get("/motorcycle/:id/observations", async (req, res) => {
+    const motorcycleId = req.params.id;
+    console.log(`[OBSERVATIONS] Petición recibida para motocicleta ID: ${motorcycleId}`);
+
+    try {
+        // Verificar que la motocicleta exista
+        const motorcycleExist = await db.query(
+            "SELECT * FROM motorcycles WHERE id = $1",
+            [motorcycleId]
+        );
+
+        if (motorcycleExist.rows.length < 1) {
+            console.log(`[OBSERVATIONS] Motocicleta ${motorcycleId} no encontrada`);
+            return res.status(404).json({
+                success: false,
+                message: "Motocicleta no encontrada"
+            });
+        }
+
+        // Consultar todas las observaciones de la motocicleta
+        const observationsResult = await db.query(
+            "SELECT * FROM observations WHERE motorcycle_id = $1 ORDER BY created_at DESC",
+            [motorcycleId]
+        );
+
+        console.log(`[OBSERVATIONS] Encontradas ${observationsResult.rows.length} observaciones`);
+        if (observationsResult.rows.length > 0) {
+            console.log(`[OBSERVATIONS] Primera observación:`, JSON.stringify(observationsResult.rows[0], null, 2));
+        }
+
+        res.status(200).json(observationsResult.rows);
+    } catch (error) {
+        console.error("[OBSERVATIONS] Error al obtener observaciones:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener las observaciones. Inténtelo en otro momento"
+        });
+    }
 })
 //OBTENER INFO DE LOS REGISTROS DE MANTENIMIENTO
 app.get("/motorcycle/:id/maintenance", async (req, res) => {
