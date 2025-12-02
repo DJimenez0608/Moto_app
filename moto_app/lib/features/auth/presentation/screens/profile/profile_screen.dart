@@ -6,7 +6,6 @@ import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/features/auth/presentation/screens/profile/actions/add_motorcycle_screen.dart';
-import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/profile/actions/edit_profile_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/profile/actions/money_balance_screen.dart';
 import 'package:moto_app/features/auth/presentation/widgets/profile_action_tile.dart';
@@ -160,12 +159,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: 'Gastos',
                       icon: Icons.attach_money,
                       onTap: () => openScreen(const MoneyBalanceScreen()),
-                    ),
-                    const SizedBox(height: 12),
-                    ProfileActionTile(
-                      title: 'Comparar',
-                      icon: Icons.compare_arrows_outlined,
-                      onTap: () => openScreen(const CompareScreen()),
                     ),
                     const SizedBox(height: 12),
                     ProfileActionTile(

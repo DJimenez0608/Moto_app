@@ -58,10 +58,12 @@ class NewsProvider extends ChangeNotifier {
       // Si no es forzado, verificar caché
       if (!forceRefresh) {
         final lastUpdate = await _getLastUpdateTime();
-        if (!_shouldRefresh(lastUpdate)) {
-          // No han pasado 24 horas, mantener noticias actuales
+        // Si hay noticias y no han pasado 24 horas, mantener las actuales
+        if (_news.isNotEmpty && !_shouldRefresh(lastUpdate)) {
+          // No han pasado 24 horas y hay noticias, mantener noticias actuales
           return;
         }
+        // Si no hay noticias, siempre intentar cargar (aunque no hayan pasado 24h)
       }
 
       // Hacer petición a la API
@@ -81,6 +83,8 @@ class NewsProvider extends ChangeNotifier {
         _news = [];
         notifyListeners();
       }
+      // Log del error para debugging (solo en modo debug)
+      debugPrint('Error al cargar noticias: $error');
       rethrow;
     }
   }

@@ -10,7 +10,6 @@ import 'package:moto_app/domain/providers/news_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:moto_app/features/auth/presentation/screens/motorcycle_detail_screen.dart';
-import 'package:moto_app/features/auth/presentation/screens/profile/actions/compare_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/trending_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
@@ -78,7 +77,9 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await newsProvider.loadNews();
     } catch (e) {
-      // No mostrar error para no molestar al usuario
+      // Log del error para debugging
+      debugPrint('Error al cargar noticias en HomeScreen: $e');
+      // No mostrar error al usuario para no molestar
       // Las noticias son opcionales
     }
   }
@@ -395,46 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
               const SizedBox(height: 30),
-              // Row con texto y botón
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: Text(
-                        'No sabes que moto comprar?',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      flex: 3,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const CompareScreen(),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: accentColor,
-                          foregroundColor: colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppConstants.borderRadius,
-                            ),
-                          ),
-                        ),
-                        child: const Text('Comparar'),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
+
               // Título Motos registradas
               Text(
                 'Motos registradas:',

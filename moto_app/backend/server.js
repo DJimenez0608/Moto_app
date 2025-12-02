@@ -4,19 +4,38 @@ import pg from "pg"
 import bcrypt from "bcrypt"
 import dotenv from "dotenv"
 import jwt from "jsonwebtoken"
+import path from "path"
+import { fileURLToPath } from "url"
+
+// Obtener el directorio actual (para ES modules)
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// CARGAR VARIABLES DE ENTORNO PRIMERO - Especificar ruta explícita
+// El .env está en el directorio padre (moto_app/.env)
+const envPath = path.join(__dirname, '..', '.env');
+const result = dotenv.config({ path: envPath });
+
+if (result.error) {
+  console.warn('Advertencia: No se pudo cargar el archivo .env:', result.error.message);
+}
 
 const app = express();
 const port = 3000; 
-const saltRounds = parseInt(process.env.SALT_ROUNDS, 10);
+const saltRounds = parseInt(process.env.SALT_ROUNDS, 10) || 10;
 
-dotenv.config();
+// Validar que las variables de PostgreSQL estén definidas
+if (!process.env.PG_PASSWORD) {
+  console.error('ERROR: PG_PASSWORD no está definida en el archivo .env');
+  process.exit(1);
+}
 
 const db = new pg.Client({
     user: process.env.PG_USER,
     host: process.env.PG_HOST,
     database: process.env.PG_DATABASE,
     password: process.env.PG_PASSWORD,
-    port: process.env.PG_PORT,
+    port: parseInt(process.env.PG_PORT, 10) || 5432,
   });
 
 db.connect();
@@ -226,12 +245,146 @@ app.post("/users", async (req, res) => {
 }
 )
 //REGISTRAR MANTENIMIENTO
-app.post("/motorcycle/:id/maintenance", (req, res) => {
-    
+app.post("/motorcycle/:id/maintenance", async (req, res) => {
+    const motorcycleId = req.params.id;
+    console.log(`[MAINTENANCE] Petición recibida para motocicleta ID: ${motorcycleId}`);
+    console.log(`[MAINTENANCE] Body recibido:`, req.body);
+
+    try {
+        // Verificar que la motocicleta exista
+        const motorcycleExist = await db.query(
+            "SELECT * FROM motorcycles WHERE id = $1",
+            [motorcycleId]
+        );
+
+        if (motorcycleExist.rows.length < 1) {
+            return res.status(404).json({
+                success: false,
+                message: "Motocicleta no encontrada"
+            });
+        }
+
+        // Extraer datos del cuerpo de la petición
+        const { date, description, cost } = req.body;
+
+        // Validar que la descripción esté presente y no esté vacía
+        if (!description || typeof description !== 'string' || description.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "La descripción es requerida y no puede estar vacía"
+            });
+        }
+
+        // Validar que la fecha esté presente y sea válida
+        if (!date || typeof date !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: "La fecha es requerida"
+            });
+        }
+
+        // Validar formato de fecha (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            return res.status(400).json({
+                success: false,
+                message: "Formato de fecha inválido. Debe ser YYYY-MM-DD"
+            });
+        }
+
+        // Validar que el costo esté presente y sea un número válido
+        if (cost === undefined || cost === null) {
+            return res.status(400).json({
+                success: false,
+                message: "El costo es requerido"
+            });
+        }
+
+        const costNumber = parseFloat(cost);
+        if (isNaN(costNumber) || costNumber < 0) {
+            return res.status(400).json({
+                success: false,
+                message: "El costo debe ser un número válido y no negativo"
+            });
+        }
+
+        // Insertar en tabla maintenance
+        await db.query(
+            "INSERT INTO maintenance (motorcycle_id, date, description, cost) VALUES ($1, $2, $3, $4)",
+            [
+                motorcycleId,
+                date,
+                description.trim(),
+                costNumber
+            ]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "Mantenimiento registrado exitosamente"
+        });
+    } catch (error) {
+        console.error("Error al registrar mantenimiento:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar el mantenimiento. Inténtelo en otro momento"
+        });
+    }
 })
 //REGISTRAR OBSERVACION
-app.post("/motorcycle/:id/observations", (req, res) => {
-    
+app.post("/motorcycle/:id/observations", async (req, res) => {
+    const motorcycleId = req.params.id;
+
+    try {
+        // Verificar que la motocicleta exista
+        const motorcycleExist = await db.query(
+            "SELECT * FROM motorcycles WHERE id = $1",
+            [motorcycleId]
+        );
+
+        if (motorcycleExist.rows.length < 1) {
+            return res.status(404).json({
+                success: false,
+                message: "Motocicleta no encontrada"
+            });
+        }
+
+        // Extraer datos del cuerpo de la petición
+        const { observation } = req.body;
+
+        // Validar que la observación esté presente y no esté vacía
+        if (!observation || typeof observation !== 'string' || observation.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "La observación es requerida y no puede estar vacía"
+            });
+        }
+
+        // Obtener fecha actual en formato ISO
+        const currentDate = new Date().toISOString();
+
+        // Insertar en tabla observations
+        await db.query(
+            "INSERT INTO observations (motorcycle_id, observation, created_at, updated_at) VALUES ($1, $2, $3, $4)",
+            [
+                motorcycleId,
+                observation.trim(),
+                currentDate,
+                currentDate
+            ]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "Observación registrada exitosamente"
+        });
+    } catch (error) {
+        console.error("Error al registrar observación:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar la observación. Inténtelo en otro momento"
+        });
+    }
 })
 //REGISTRAR MOTO DE USUARIO
 app.post("/users/:id/motorcycles", async (req, res) => {
