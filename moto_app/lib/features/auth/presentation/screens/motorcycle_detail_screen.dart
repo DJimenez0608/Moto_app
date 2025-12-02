@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
+import 'package:moto_app/domain/models/maintenance.dart';
+import 'package:moto_app/domain/models/observation.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
+import 'package:moto_app/domain/providers/maintenance_provider.dart';
+import 'package:moto_app/domain/providers/observation_provider.dart';
 import 'package:moto_app/features/auth/data/datasources/observation_http_service.dart';
 import 'package:moto_app/features/auth/data/datasources/maintenance_http_service.dart';
 
@@ -26,6 +31,29 @@ class MotorcycleDetailScreen extends StatefulWidget {
 }
 
 class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
+  int _selectedTab = 0; // 0=Detalle, 1=Mantenimientos, 2=Observaciones
+
+  void _onTabSelected(int index) {
+    setState(() {
+      _selectedTab = index;
+    });
+
+    // Carga lazy de datos
+    if (index == 1) {
+      // Mantenimientos
+      Provider.of<MaintenanceProvider>(
+        context,
+        listen: false,
+      ).getMaintenance(widget.motorcycleId);
+    } else if (index == 2) {
+      // Observaciones
+      Provider.of<ObservationProvider>(
+        context,
+        listen: false,
+      ).getObservations(widget.motorcycleId);
+    }
+  }
+
   Future<void> _showOptionsDialog(
     BuildContext context,
     Motorcycle motorcycle,
@@ -352,6 +380,79 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
     return '$day/$month/$year';
   }
 
+  Widget _buildTabsRow(BuildContext context, ColorScheme colorScheme) {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildTab(
+            context: context,
+            colorScheme: colorScheme,
+            text: 'Detalle',
+            index: 0,
+          ),
+        ),
+        Expanded(
+          child: _buildTab(
+            context: context,
+            colorScheme: colorScheme,
+            text: 'Mantenimientos',
+            index: 1,
+          ),
+        ),
+        Expanded(
+          child: _buildTab(
+            context: context,
+            colorScheme: colorScheme,
+            text: 'Observaciones',
+            index: 2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTab({
+    required BuildContext context,
+    required ColorScheme colorScheme,
+    required String text,
+    required int index,
+  }) {
+    final isSelected = _selectedTab == index;
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: () => _onTabSelected(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color:
+              isSelected
+                  ? (theme.brightness == Brightness.dark
+                      ? colorScheme.primary.withOpacity(0.2)
+                      : AppColors.accentCoralLight)
+                  : Colors.transparent,
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? colorScheme.primary : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: theme.textTheme.bodySmall?.copyWith(
+            fontSize: 12,
+            color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showAddObservationDialog(
     BuildContext context,
     Motorcycle motorcycle,
@@ -508,36 +609,58 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  height: screenHeight * 0.4,
-                  width: double.infinity,
-                  child: Hero(
-                    tag: widget.heroTag,
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(
-                          AppConstants.borderRadius * 2,
-                        ),
-                        bottomRight: Radius.circular(
-                          AppConstants.borderRadius * 2,
+          Column(
+            children: [
+              // Menú de tabs fijo en la parte superior
+              Container(
+                color: theme.scaffoldBackgroundColor,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: _buildTabsRow(context, colorScheme),
+              ),
+              // Contenido scrolleable
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        height: screenHeight * 0.4,
+                        width: double.infinity,
+                        child: Hero(
+                          tag: widget.heroTag,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(
+                                AppConstants.borderRadius * 2,
+                              ),
+                              bottomRight: Radius.circular(
+                                AppConstants.borderRadius * 2,
+                              ),
+                            ),
+                            child: Image.asset(
+                              widget.imagePath,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
                       ),
-                      child: Image.asset(widget.imagePath, fit: BoxFit.contain),
-                    ),
+                      const SizedBox(height: 20),
+                      // Contenido según tab seleccionado
+                      if (_selectedTab == 0)
+                        _MotorcycleDetails(motorcycle: motorcycle)
+                      else if (_selectedTab == 1)
+                        _MaintenanceList(motorcycleId: widget.motorcycleId)
+                      else if (_selectedTab == 2)
+                        _ObservationsList(motorcycleId: widget.motorcycleId),
+                      const SizedBox(height: 100), // Espacio para el FAB
+                    ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                _MotorcycleDetails(motorcycle: motorcycle),
-                const SizedBox(height: 100), // Espacio para el FAB
-              ],
-            ),
+              ),
+            ],
           ),
-          // FAB simple que abre diálogo de opciones
+          // FAB fijo en la parte inferior
           Positioned(
             left: 0,
             right: 0,
@@ -726,6 +849,285 @@ class _DateSelectionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MaintenanceList extends StatelessWidget {
+  const _MaintenanceList({required this.motorcycleId});
+
+  final int motorcycleId;
+
+  @override
+  Widget build(BuildContext context) {
+    final maintenanceProvider = context.watch<MaintenanceProvider>();
+    final maintenanceList = maintenanceProvider.maintenanceForMotorcycle(
+      motorcycleId,
+    );
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    if (maintenanceProvider.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (maintenanceProvider.errorMessage != null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Error: ${maintenanceProvider.errorMessage}',
+            style: TextStyle(color: colorScheme.error),
+          ),
+        ),
+      );
+    }
+
+    if (maintenanceList.isEmpty) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No hay mantenimientos registrados',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text('Mantenimientos', style: theme.textTheme.titleLarge),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: maintenanceList.length,
+          itemBuilder: (context, index) {
+            final maintenance = maintenanceList[index];
+            return _MaintenanceCard(maintenance: maintenance);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _MaintenanceCard extends StatelessWidget {
+  const _MaintenanceCard({required this.maintenance});
+
+  final Maintenance maintenance;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final numberFormat = NumberFormat('#,###');
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateFormat.format(maintenance.date),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    maintenance.description,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'COP ${numberFormat.format(maintenance.cost)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.edit, color: colorScheme.primary),
+              onPressed: () {
+                // Por ahora no hace nada
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ObservationsList extends StatelessWidget {
+  const _ObservationsList({required this.motorcycleId});
+
+  final int motorcycleId;
+
+  @override
+  Widget build(BuildContext context) {
+    final observationProvider = context.watch<ObservationProvider>();
+    final observationsList = observationProvider.observationsForMotorcycle(
+      motorcycleId,
+    );
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    if (observationProvider.isLoading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(
+                'Cargando observaciones...',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (observationProvider.errorMessage != null) {
+      return Card(
+        margin: const EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Icon(Icons.error_outline, color: colorScheme.error, size: 48),
+              const SizedBox(height: 8),
+              Text(
+                'Error al cargar observaciones',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                observationProvider.errorMessage ?? 'Error desconocido',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (observationsList.isEmpty) {
+      return Card(
+        margin: const EdgeInsets.all(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No hay observaciones registradas',
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Text('Observaciones', style: theme.textTheme.titleLarge),
+        ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: observationsList.length,
+          itemBuilder: (context, index) {
+            final observation = observationsList[index];
+            return _ObservationCard(observation: observation);
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ObservationCard extends StatelessWidget {
+  const _ObservationCard({required this.observation});
+
+  final Observation observation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateFormat.format(observation.createdAt),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    observation.observation,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.edit, color: colorScheme.primary),
+              onPressed: () {
+                // Por ahora no hace nada
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
