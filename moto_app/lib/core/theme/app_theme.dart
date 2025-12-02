@@ -36,11 +36,7 @@ class AppTheme {
       onSurfaceVariant: Colors.grey.shade400,
     );
 
-    return _baseTheme(
-      colorScheme,
-      const Color(0xFF0F172A),
-      _darkTextTheme,
-    );
+    return _baseTheme(colorScheme, const Color(0xFF0F172A), _darkTextTheme);
   }
 
   static ThemeData _baseTheme(
@@ -53,7 +49,7 @@ class AppTheme {
       colorScheme: colorScheme,
       scaffoldBackgroundColor: scaffoldBackground,
       textTheme: textTheme,
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: colorScheme.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.borderRadius),
@@ -97,7 +93,7 @@ class AppTheme {
         elevation: 8,
         type: BottomNavigationBarType.fixed,
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: colorScheme.surface,
         surfaceTintColor: colorScheme.surfaceTint,
         shape: RoundedRectangleBorder(
