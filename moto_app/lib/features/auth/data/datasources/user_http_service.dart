@@ -78,4 +78,45 @@ class UserHttpService {
       throw Exception('Error del servidor: ${response.statusCode}');
     }
   }
+
+  Future<bool> updateUserProfile(
+    int userId,
+    Map<String, dynamic> updates,
+  ) async {
+    var uri = Uri.parse('$_baseUrl/$userId');
+    var response = await http.patch(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(updates),
+    );
+    if (response.statusCode == 200) {
+      return true;
+    } else if (response.statusCode == 400) {
+      try {
+        final responseData = jsonDecode(response.body);
+        final message = responseData['message'] ?? response.body;
+        throw Exception(message);
+      } catch (e) {
+        throw Exception(response.body);
+      }
+    } else if (response.statusCode == 409) {
+      try {
+        final responseData = jsonDecode(response.body);
+        final message = responseData['message'] ?? response.body;
+        throw Exception(message);
+      } catch (e) {
+        throw Exception(response.body);
+      }
+    } else if (response.statusCode == 404) {
+      try {
+        final responseData = jsonDecode(response.body);
+        final message = responseData['message'] ?? 'Usuario no encontrado';
+        throw Exception(message);
+      } catch (e) {
+        throw Exception('Usuario no encontrado');
+      }
+    } else {
+      throw Exception('Error del servidor: ${response.statusCode}');
+    }
+  }
 }

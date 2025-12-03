@@ -55,6 +55,96 @@ app.get("/users/:id", async (req, res) => {
     //Ya se hace en el login
 
 })
+//ACTUALIZAR PERFIL DE USUARIO
+app.patch("/users/:id", async (req, res) => {
+    console.log(`[UPDATE PROFILE] Params recibidos:`, req.params);
+    console.log(`[UPDATE PROFILE] ID original (string): "${req.params.id}"`);
+    const userId = parseInt(req.params.id, 10);
+    console.log(`[UPDATE PROFILE] ID parseado (number): ${userId} (tipo: ${typeof userId})`);
+    console.log(`[UPDATE PROFILE] Body recibido:`, req.body);
+
+    // Validar que el ID sea un número válido
+    if (isNaN(userId)) {
+        console.log(`[UPDATE PROFILE] ID inválido: ${req.params.id}`);
+        return res.status(400).json({
+            success: false,
+            message: "ID de usuario inválido"
+        });
+    }
+
+    try {
+        // Verificar que el usuario existe
+        const userExist = await db.query(
+            "SELECT * FROM users WHERE id = $1",
+            [userId]
+        );
+
+        console.log(`[UPDATE PROFILE] Usuario encontrado: ${userExist.rows.length} filas`);
+
+        if (userExist.rows.length < 1) {
+            console.log(`[UPDATE PROFILE] Usuario ${userId} no encontrado en la base de datos`);
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no encontrado"
+            });
+        }
+
+        // Si hay username en el body, verificar que no exista otro usuario con ese username
+        if (req.body.username !== undefined) {
+            const usernameCheck = await db.query(
+                "SELECT * FROM users WHERE username = $1 AND id != $2",
+                [req.body.username, userId]
+            );
+
+            if (usernameCheck.rows.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: "El nombre de usuario que elegiste ya existe"
+                });
+            }
+        }
+
+        // Construir query UPDATE dinámico con solo los campos presentes en el body
+        const allowedFields = ['full_name', 'email', 'phone_number', 'username'];
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+
+        for (const field of allowedFields) {
+            if (req.body[field] !== undefined) {
+                updates.push(`${field} = $${paramIndex}`);
+                values.push(req.body[field]);
+                paramIndex++;
+            }
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: "No hay campos para actualizar"
+            });
+        }
+
+        // Agregar el userId al final para el WHERE
+        values.push(userId);
+
+        const updateQuery = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`;
+        
+        const result = await db.query(updateQuery, values);
+
+        res.status(200).json({
+            success: true,
+            message: "Perfil actualizado exitosamente",
+            user: result.rows[0]
+        });
+    } catch (error) {
+        console.error("Error al actualizar perfil:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al actualizar el perfil. Inténtelo en otro momento"
+        });
+    }
+})
 //OBTENER INFO DE LAS MOTOS DEL USUARIO
 app.get("/users/:id/motorcycles", async (req, res) => {
     const userId = req.params.id
