@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/core/utils/input_validators.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
+import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
+import 'package:moto_app/domain/models/user.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -20,10 +22,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _isEditing = false;
   bool _initialized = false;
+  bool _isSaving = false;
 
   String? _fullNameError;
   String? _emailError;
   String? _phoneError;
+
+  // Variables para almacenar valores originales
+  String _originalFullName = '';
+  String _originalUsername = '';
+  String _originalEmail = '';
+  String _originalPhone = '';
 
   @override
   void initState() {
@@ -45,6 +54,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneController.text = user?.phoneNumber ?? '';
     _usernameController.text = user?.username ?? '';
 
+    // Guardar valores originales
+    _originalFullName = user?.fullName ?? '';
+    _originalUsername = user?.username ?? '';
+    _originalEmail = user?.email ?? '';
+    _originalPhone = user?.phoneNumber ?? '';
+
     _initialized = true;
   }
 
@@ -58,17 +73,128 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   void _toggleEditing() {
-    if (_isEditing && !_validateAllFields()) {
-      return;
-    }
-    setState(() {
-      if (!_isEditing) {
+    if (_isEditing) {
+      // Estamos guardando cambios
+      if (!_validateAllFields()) {
+        return;
+      }
+      _saveChanges();
+    } else {
+      // Estamos activando edición
+      setState(() {
         _fullNameError = null;
         _emailError = null;
         _phoneError = null;
-      }
-      _isEditing = !_isEditing;
+        // Guardar valores originales cuando se activa la edición
+        _originalFullName = _fullNameController.text;
+        _originalUsername = _usernameController.text;
+        _originalEmail = _emailController.text;
+        _originalPhone = _phoneController.text;
+        _isEditing = true;
+      });
+    }
+  }
+
+  Future<void> _saveChanges() async {
+    if (_isSaving) return;
+
+    // Comparar valores actuales con originales
+    final hasChanges = _fullNameController.text != _originalFullName ||
+        _usernameController.text != _originalUsername ||
+        _emailController.text != _originalEmail ||
+        _phoneController.text != _originalPhone;
+
+    if (!hasChanges) {
+      // No hay cambios, solo deshabilitar campos
+      setState(() {
+        _isEditing = false;
+      });
+      return;
+    }
+
+    // Hay cambios, construir Map con solo campos modificados
+    final Map<String, dynamic> updates = {};
+    if (_fullNameController.text != _originalFullName) {
+      updates['full_name'] = _fullNameController.text;
+    }
+    if (_usernameController.text != _originalUsername) {
+      updates['username'] = _usernameController.text;
+    }
+    if (_emailController.text != _originalEmail) {
+      updates['email'] = _emailController.text;
+    }
+    if (_phoneController.text != _originalPhone) {
+      updates['phone_number'] = _phoneController.text;
+    }
+
+    setState(() {
+      _isSaving = true;
     });
+
+    try {
+      final user = context.read<UserProvider>().user;
+      if (user == null) {
+        throw Exception('Usuario no encontrado');
+      }
+
+      await UserHttpService().updateUserProfile(user.id, updates);
+
+      // Actualizar UserProvider con los nuevos valores
+      final updatedUser = User(
+        id: user.id,
+        fullName: _fullNameController.text,
+        email: _emailController.text,
+        phoneNumber: _phoneController.text,
+        username: _usernameController.text,
+        password: user.password,
+      );
+
+      context.read<UserProvider>().setUser(updatedUser);
+
+      // Actualizar valores originales
+      _originalFullName = _fullNameController.text;
+      _originalUsername = _usernameController.text;
+      _originalEmail = _emailController.text;
+      _originalPhone = _phoneController.text;
+
+      if (!mounted) return;
+      setState(() {
+        _isEditing = false;
+        _isSaving = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perfil actualizado exitosamente'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+      });
+
+      if (!mounted) return;
+      String errorMessage = 'Error al actualizar perfil';
+      if (e is Exception) {
+        final message = e.toString();
+        // Extraer solo el mensaje sin el prefijo "Exception: "
+        errorMessage = message.startsWith('Exception: ')
+            ? message.substring(11)
+            : message;
+      } else {
+        errorMessage = e.toString();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   bool _validateAllFields() {
@@ -123,11 +249,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Text('Editar perfil'),
         actions: [
           TextButton(
-            onPressed: _toggleEditing,
+            onPressed: _isSaving ? null : _toggleEditing,
             style: TextButton.styleFrom(
               foregroundColor: colorScheme.primary,
             ),
-            child: Text(_isEditing ? 'Guardar cambios' : 'Editar perfil'),
+            child: _isSaving
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(_isEditing ? 'Guardar cambios' : 'Editar perfil'),
           ),
         ],
       ),
