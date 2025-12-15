@@ -47,11 +47,11 @@ class _HomeScreenState extends State<HomeScreen> {
       listen: false,
     );
 
-    final userId = userProvider.user?.id;
-    if (userId == null) return;
+    final user = userProvider.user;
+    if (user == null) return;
 
     try {
-      await motorcycleProvider.getMotorcycles(userId);
+      await motorcycleProvider.getMotorcycles(user.id, user.username);
       maintenanceProvider.clearMaintenance();
 
       final motorcycles = motorcycleProvider.motorcycles;
@@ -91,41 +91,28 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  String _getMotorcycleImagePath(int index) {
-    switch (index) {
-      case 0:
-        return 'assets/images/yamaha.jpg';
-      case 1:
-        return 'assets/images/pulsar.png';
-      default:
-        return 'assets/images/notImageFound.jpg';
-    }
-  }
-
-  void _openMotorcycleDetail(Motorcycle motorcycle, int index) {
+  void _openMotorcycleDetail(Motorcycle motorcycle) {
     final heroTag = 'motorcycle_${motorcycle.id}';
-    final imagePath = _getMotorcycleImagePath(index);
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
             (_) => MotorcycleDetailScreen(
               motorcycleId: motorcycle.id,
-              imagePath: imagePath,
+              motorcyclePhotoUrl: motorcycle.photo,
               heroTag: heroTag,
             ),
       ),
     );
   }
 
-  Widget _buildMotorcycleCard(Motorcycle motorcycle, int index) {
+  Widget _buildMotorcycleCard(Motorcycle motorcycle) {
     final heroTag = 'motorcycle_${motorcycle.id}';
-    final imagePath = _getMotorcycleImagePath(index);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return GestureDetector(
-      onTap: () => _openMotorcycleDetail(motorcycle, index),
+      onTap: () => _openMotorcycleDetail(motorcycle),
       child: Card(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,7 +138,34 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: const BorderRadius.all(
                       Radius.circular(AppConstants.borderRadius),
                     ),
-                    child: Image.asset(imagePath, fit: BoxFit.contain),
+                    child: motorcycle.photo != null
+                        ? Image.network(
+                            motorcycle.photo!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.motorcycle,
+                                size: 50,
+                                color: colorScheme.onSurfaceVariant,
+                              );
+                            },
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            },
+                          )
+                        : Icon(
+                            Icons.motorcycle,
+                            size: 50,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                   ),
                 ),
               ),
@@ -426,7 +440,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.only(bottom: 10.0),
                         child: _buildMotorcycleCard(
                           motorcycleProvider.motorcycles[index],
-                          index,
                         ),
                       );
                     },

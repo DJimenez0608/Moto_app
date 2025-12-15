@@ -50,7 +50,8 @@ class ObservationProvider extends ChangeNotifier {
         }
         _observationsByMotorcycle[motorcycleId] = [];
       } else {
-        _observationsByMotorcycle[motorcycleId] =
+        // Parsear observaciones
+        final observations =
             observationsMaps.map((observation) {
               try {
                 if (kDebugMode) {
@@ -74,6 +75,8 @@ class ObservationProvider extends ChangeNotifier {
                 );
               }
             }).toList();
+
+        _observationsByMotorcycle[motorcycleId] = observations;
 
         if (kDebugMode) {
           debugPrint(

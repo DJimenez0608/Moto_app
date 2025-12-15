@@ -19,6 +19,7 @@ class Motorcycle {
     required this.fuelCapacity,
     required this.weight,
     required this.userId,
+    this.photo,
   });
 
   final int id;
@@ -32,6 +33,7 @@ class Motorcycle {
   final String fuelCapacity;
   final int weight;
   final int userId;
+  final String? photo;
 
   factory Motorcycle.fromJson(Map<String, dynamic> json) {
     return Motorcycle(
@@ -46,6 +48,7 @@ class Motorcycle {
       fuelCapacity: json['fuel_capacity'],
       weight: json['weight'],
       userId: json['user_id'],
+      photo: json['photo'] as String?,
     );
   }
 
@@ -62,6 +65,7 @@ class Motorcycle {
       'fuel_capacity': fuelCapacity,
       'weight': weight,
       'user_id': userId,
+      if (photo != null) 'photo': photo,
     };
   }
 }

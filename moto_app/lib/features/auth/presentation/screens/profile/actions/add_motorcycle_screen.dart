@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/models/soat.dart';
@@ -12,6 +13,10 @@ import 'package:moto_app/domain/models/technomechanical.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/features/auth/data/datasources/motorcycle_http_service.dart';
+import 'package:moto_app/features/auth/data/services/firebase_storage_service.dart';
+import 'package:moto_app/features/auth/data/utils/image_compression_service.dart';
+import 'package:moto_app/features/auth/data/datasources/motorcycle_image_serpapi_service.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AddMotorcycleScreen extends StatefulWidget {
   const AddMotorcycleScreen({super.key});
@@ -41,17 +46,6 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
     setState(() {
       _searchQuery = _searchController.text;
     });
-  }
-
-  String _getMotorcycleImagePath(int index) {
-    switch (index % 3) {
-      case 0:
-        return 'assets/images/yamaha.jpg';
-      case 1:
-        return 'assets/images/pulsar.png';
-      default:
-        return 'assets/images/notImageFound.jpg';
-    }
   }
 
   @override
@@ -164,7 +158,6 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
       itemBuilder: (context, index) {
         final motorcycle = filteredMotorcycles[index];
         final title = '${motorcycle.make} ${motorcycle.model}';
-        final imagePath = _getMotorcycleImagePath(index);
 
         return Slidable(
           key: ValueKey(motorcycle.id),
@@ -216,7 +209,44 @@ class _AddMotorcycleScreenState extends State<AddMotorcycleScreen> {
                         borderRadius: const BorderRadius.all(
                           Radius.circular(AppConstants.borderRadius),
                         ),
-                        child: Image.asset(imagePath, fit: BoxFit.cover),
+                        child:
+                            motorcycle.photo != null
+                                ? Image.network(
+                                  motorcycle.photo!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Icon(
+                                      Icons.motorcycle,
+                                      size: 50,
+                                      color: colorScheme.onSurfaceVariant,
+                                    );
+                                  },
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
+                                    if (loadingProgress == null) return child;
+                                    return Center(
+                                      child: CircularProgressIndicator(
+                                        value:
+                                            loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                        .cumulativeBytesLoaded /
+                                                    loadingProgress
+                                                        .expectedTotalBytes!
+                                                : null,
+                                      ),
+                                    );
+                                  },
+                                )
+                                : Icon(
+                                  Icons.motorcycle,
+                                  size: 50,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                       ),
                     ),
                   ),
@@ -271,6 +301,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
   File? _selectedImage;
   bool _cameraPermissionDenied = false;
   bool _showPermissionError = false;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -334,6 +365,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
               const SizedBox(height: 24),
               _DialogNavigationControls(
                 currentPage: _currentPage,
+                isLoading: _isCreating,
                 onCancel: () => Navigator.of(context).pop(),
                 onNext: () async {
                   if (_currentPage < 2) {
@@ -427,7 +459,7 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
                     child: _GlassActionTile(
                       icon: Icons.photo_library_outlined,
                       label: 'Escoger de galería',
-                      onTap: () {},
+                      onTap: _pickImageFromGallery,
                     ),
                   ),
                 ],
@@ -705,6 +737,21 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
     }
   }
 
+  Future<void> _pickImageFromGallery() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+        _showPermissionError = false;
+      });
+    }
+  }
+
   Motorcycle _buildMotorcycleModel(int userId) {
     return Motorcycle(
       id: 0, // ID temporal, se asignará en el backend
@@ -763,6 +810,10 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
   }
 
   Future<void> _createMotorcycle(BuildContext context) async {
+    setState(() {
+      _isCreating = true;
+    });
+
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final motorcycleProvider = Provider.of<MotorcycleProvider>(
       context,
@@ -770,6 +821,9 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
     );
 
     if (userProvider.user == null) {
+      setState(() {
+        _isCreating = false;
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -799,17 +853,75 @@ class _AddMotorcycleDialogState extends State<AddMotorcycleDialog> {
 
       if (!mounted) return;
 
+      // Solo si la creación fue exitosa, subir foto a Firebase Storage
+      File? imageToUpload = _selectedImage;
+
+      // Si no hay foto del usuario, obtener imagen de SerpAPI
+      if (imageToUpload == null) {
+        try {
+          final serpapiService = MotorcycleImageSerpapiService();
+          final imageUrl = await serpapiService.getMotorcycleImageUrl(
+            motorcycle.make,
+            motorcycle.model,
+            motorcycle.year,
+          );
+
+          if (imageUrl != null) {
+            // Descargar imagen desde URL
+            final response = await http.get(Uri.parse(imageUrl));
+            if (response.statusCode == 200) {
+              final tempDir = await getTemporaryDirectory();
+              final file = File(
+                '${tempDir.path}/motorcycle_${DateTime.now().millisecondsSinceEpoch}.jpg',
+              );
+              await file.writeAsBytes(response.bodyBytes);
+              imageToUpload = file;
+            }
+          }
+        } catch (e) {
+          // Si falla la obtención de imagen, continuar sin foto
+          debugPrint('Error al obtener imagen de SerpAPI: $e');
+        }
+      }
+
+      // Subir foto a Firebase Storage si existe
+      if (imageToUpload != null) {
+        try {
+          final compressedImage =
+              await ImageCompressionService.compressAndSaveToTemp(
+                imageToUpload,
+              );
+          final storageService = FirebaseStorageService();
+          await storageService.uploadMotorcyclePhoto(
+            username: userProvider.user!.username,
+            make: motorcycle.make,
+            model: motorcycle.model,
+            year: motorcycle.year,
+            imageFile: compressedImage,
+          );
+        } catch (e) {
+          // Si falla la subida, continuar sin mostrar error crítico
+          debugPrint('Error al subir foto a Firebase Storage: $e');
+        }
+      }
+
       // Mostrar SnackBar de éxito
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.green),
       );
 
       // Refrescar lista de motocicletas
-      await motorcycleProvider.getMotorcycles(userProvider.user!.id);
+      await motorcycleProvider.getMotorcycles(
+        userProvider.user!.id,
+        userProvider.user!.username,
+      );
 
       // Cerrar diálogo
       Navigator.of(context).pop();
     } catch (error) {
+      setState(() {
+        _isCreating = false;
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -861,12 +973,14 @@ class _DialogPageIndicator extends StatelessWidget {
 class _DialogNavigationControls extends StatelessWidget {
   const _DialogNavigationControls({
     required this.currentPage,
+    required this.isLoading,
     required this.onCancel,
     required this.onNext,
     required this.onPrevious,
   });
 
   final int currentPage;
+  final bool isLoading;
   final VoidCallback onCancel;
   final VoidCallback onNext;
   final VoidCallback onPrevious;
@@ -887,12 +1001,24 @@ class _DialogNavigationControls extends StatelessWidget {
         ],
         const SizedBox(width: 8),
         ElevatedButton(
-          onPressed: onNext,
+          onPressed: isLoading ? null : onNext,
           style: ElevatedButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
           ),
-          child: Text(currentPage == 2 ? 'Crear' : 'Siguiente'),
+          child:
+              isLoading
+                  ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.onPrimary,
+                      ),
+                    ),
+                  )
+                  : Text(currentPage == 2 ? 'Crear' : 'Siguiente'),
         ),
       ],
     );
