@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moto_app/features/auth/data/datasources/user_http_service.dart';
-import 'package:moto_app/features/auth/presentation/screens/home_screen.dart';
+import 'package:moto_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:moto_app/core/utils/input_validators.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -306,12 +306,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         );
                                     if (!mounted) return;
                                     if (isSignedUp) {
-                                      Navigator.push(
+                                      ScaffoldMessenger.of(currentContext)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                              'Registro exitoso. Por favor inicia sesión'),
+                                        ),
+                                      );
+                                      Navigator.pushAndRemoveUntil(
                                         currentContext,
                                         MaterialPageRoute(
                                           builder:
-                                              (context) => const HomeScreen(),
+                                              (context) => const LoginScreen(),
                                         ),
+                                        (route) => false,
                                       );
                                     }
                                   }

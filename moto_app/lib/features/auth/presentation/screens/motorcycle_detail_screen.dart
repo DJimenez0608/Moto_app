@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'package:moto_app/core/constants/app_constants.dart';
 import 'package:moto_app/core/theme/app_colors.dart';
@@ -458,13 +461,78 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
     Motorcycle motorcycle,
   ) async {
     final TextEditingController observationController = TextEditingController();
+    File? selectedImage;
     bool isLoading = false;
+    bool cameraPermissionDenied = false;
+    bool showPermissionError = false;
+
+    Future<void> takePhoto() async {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        selectedImage = File(image.path);
+      }
+    }
+
+    Future<void> pickImageFromGallery() async {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        selectedImage = File(image.path);
+      }
+    }
+
+    Future<void> requestCameraPermission() async {
+      final status = await Permission.camera.status;
+
+      if (status.isDenied) {
+        final result = await Permission.camera.request();
+
+        if (result.isDenied) {
+          if (!cameraPermissionDenied) {
+            cameraPermissionDenied = true;
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Es importante otorgar el permiso de cámara para poder tomar una foto de la observación.',
+                ),
+                duration: Duration(seconds: 4),
+              ),
+            );
+          } else {
+            showPermissionError = true;
+          }
+        } else if (result.isPermanentlyDenied) {
+          showPermissionError = true;
+        } else if (result.isGranted) {
+          cameraPermissionDenied = false;
+          showPermissionError = false;
+          await takePhoto();
+        }
+      } else if (status.isPermanentlyDenied) {
+        showPermissionError = true;
+      } else if (status.isGranted) {
+        await takePhoto();
+      }
+    }
 
     await showDialog(
       context: context,
       builder:
           (dialogContext) => StatefulBuilder(
             builder: (context, setDialogState) {
+              final theme = Theme.of(context);
+              final colorScheme = theme.colorScheme;
+
               return AlertDialog(
                 title: Align(
                   alignment: Alignment.center,
@@ -472,28 +540,153 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
                 ),
                 content: SizedBox(
                   width: double.maxFinite,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: observationController,
-                        decoration: InputDecoration(
-                          hintText:
-                              'Escriba su observación aca para luego indicarle a su mecánico',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppConstants.borderRadius,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: observationController,
+                          decoration: InputDecoration(
+                            hintText:
+                                'Escriba su observación aca para luego indicarle a su mecánico',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.borderRadius,
+                              ),
+                            ),
+                          ),
+                          maxLines: 5,
+                          enabled: !isLoading,
+                        ),
+                        const SizedBox(height: 16),
+                        // Sección de foto
+                        if (selectedImage != null) ...[
+                          Center(
+                            child: Container(
+                              width: 100,
+                              height: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                                border: Border.all(
+                                  color: colorScheme.surfaceVariant.withOpacity(0.7),
+                                ),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppConstants.borderRadius,
+                                ),
+                                child: Image.file(selectedImage!, fit: BoxFit.cover),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () {
+                                  setDialogState(() {
+                                    selectedImage = null;
+                                  });
+                                },
+                            child: const Text('Eliminar foto'),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Container(
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceVariant.withOpacity(0.45),
+                            borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                            border: Border.all(
+                              color: colorScheme.surfaceVariant.withOpacity(0.7),
+                            ),
+                          ),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                                    onTap: isLoading
+                                        ? null
+                                        : () async {
+                                          await requestCameraPermission();
+                                          setDialogState(() {});
+                                        },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 28),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.camera_alt_outlined, size: 32, color: colorScheme.primary),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Tomar foto',
+                                            style: theme.textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                VerticalDivider(
+                                  width: 1,
+                                  thickness: 1,
+                                  color: colorScheme.surfaceVariant.withOpacity(0.6),
+                                ),
+                                Expanded(
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                                    onTap: isLoading
+                                        ? null
+                                        : () async {
+                                          await pickImageFromGallery();
+                                          setDialogState(() {});
+                                        },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 28),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.photo_library_outlined, size: 32, color: colorScheme.primary),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Escoger de galería',
+                                            style: theme.textTheme.titleSmall?.copyWith(
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        maxLines: 5,
-                        enabled: !isLoading,
-                      ),
-                      if (isLoading) ...[
-                        const SizedBox(height: 16),
-                        const CircularProgressIndicator(),
+                        if (showPermissionError) ...[
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: Text(
+                              'Acceso a cámara denegado: Para agregar una foto de la observación hágalo con el botón "Escoger de galería" o diríjase a las configuraciones de la aplicación y habilite el permiso manualmente',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.error,
+                              ),
+                              textAlign: TextAlign.left,
+                            ),
+                          ),
+                        ],
+                        if (isLoading) ...[
+                          const SizedBox(height: 16),
+                          const CircularProgressIndicator(),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
                 actions: [
@@ -533,9 +726,16 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
                                 await ObservationHttpService().addObservation(
                                   motorcycle.id,
                                   observationText,
+                                  imageFile: selectedImage,
                                 );
 
                                 if (!context.mounted) return;
+
+                                // Refrescar observaciones
+                                Provider.of<ObservationProvider>(
+                                  context,
+                                  listen: false,
+                                ).getObservations(motorcycle.id);
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -1098,33 +1298,62 @@ class _ObservationCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    dateFormat.format(observation.createdAt),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateFormat.format(observation.createdAt),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        observation.observation,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    observation.observation,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
+                ),
+                IconButton(
+                  icon: Icon(Icons.edit, color: colorScheme.primary),
+                  onPressed: () {
+                    // Por ahora no hace nada
+                  },
+                ),
+              ],
+            ),
+            if (observation.imageUrl != null && observation.imageUrl!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                child: Image.network(
+                  observation.imageUrl!,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      width: double.infinity,
+                      height: 200,
+                      color: colorScheme.surfaceVariant,
+                      child: Icon(
+                        Icons.broken_image,
+                        color: colorScheme.onSurfaceVariant,
+                        size: 48,
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            IconButton(
-              icon: Icon(Icons.edit, color: colorScheme.primary),
-              onPressed: () {
-                // Por ahora no hace nada
-              },
-            ),
+            ],
           ],
         ),
       ),

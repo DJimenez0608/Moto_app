@@ -13,6 +13,7 @@ class Observation {
     required this.observation,
     required this.createdAt,
     required this.updatedAt,
+    this.imageUrl,
   });
 
   final int id;
@@ -20,6 +21,7 @@ class Observation {
   final String observation;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? imageUrl;
 
   factory Observation.fromJson(Map<String, dynamic> json) {
     final idValue = json['id'];
@@ -55,6 +57,7 @@ class Observation {
       observation: json['observation'] as String,
       createdAt: parseDateTime(createdAtValue),
       updatedAt: parseDateTime(updatedAtValue),
+      imageUrl: json['image_url'] as String?,
     );
   }
 
@@ -65,6 +68,7 @@ class Observation {
       'observation': observation,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      if (imageUrl != null) 'image_url': imageUrl,
     };
   }
 }
