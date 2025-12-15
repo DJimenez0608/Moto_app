@@ -530,7 +530,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Hola, ${userProvider.user?.fullName}',
+                          'Hola, ${userProvider.user?.username}',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         Text(

@@ -109,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final themeProvider = context.watch<ThemeProvider>();
 
     final user = userProvider.user;
-    final fullName = user?.fullName ?? 'Usuario invitado';
+    final username = user?.username ?? 'Usuario invitado';
     final motorcycleCount = motorcycleProvider.motorcycles.length;
     void openScreen(Widget screen) {
       Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
@@ -123,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              _ProfileHeader(fullName: fullName),
+              _ProfileHeader(username: username),
               Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
@@ -379,9 +379,9 @@ class _ColorOption extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.fullName});
+  const _ProfileHeader({required this.username});
 
-  final String fullName;
+  final String username;
 
   @override
   Widget build(BuildContext context) {
@@ -442,7 +442,7 @@ class _ProfileHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  fullName.toUpperCase(),
+                  username.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     color: AppColors.pureWhite,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
@@ -11,9 +12,29 @@ import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'features/auth/presentation/screens/splash_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
-  await dotenv.load(fileName: '.env');
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    // Si no existe el archivo .env, continuar sin él
+    debugPrint('No se pudo cargar .env: $e');
+  }
+
+  // Inicializar Firebase con manejo de errores
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    // Si Firebase falla, continuar sin él (para desarrollo/debugging)
+    debugPrint('Error al inicializar Firebase: $e');
+  }
+
   runApp(const MyApp());
 }
 

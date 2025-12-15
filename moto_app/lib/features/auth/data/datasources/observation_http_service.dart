@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_storage/firebase_storage.dart';
 import '../../../../core/constants/app_constants.dart';
 
 class ObservationHttpService {
@@ -147,9 +148,42 @@ class ObservationHttpService {
     }
   }
 
-  Future<bool> addObservation(int motorcycleId, String observation) async {
+  Future<String?> _uploadImageToFirebase(File imageFile) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = 'observations/${timestamp}_${imageFile.path.split('/').last}';
+      final ref = FirebaseStorage.instance.ref().child(fileName);
+      
+      await ref.putFile(imageFile);
+      final downloadUrl = await ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error uploading image to Firebase: $e');
+      }
+      // Si Firebase no está disponible, retornar null en lugar de lanzar error
+      // Esto permite que las observaciones se creen sin imagen si Firebase falla
+      throw Exception('Error al subir la imagen. Asegúrate de que Firebase esté configurado correctamente: $e');
+    }
+  }
+
+  Future<bool> addObservation(
+    int motorcycleId,
+    String observation, {
+    File? imageFile,
+  }) async {
+    String? imageUrl;
+    
+    // Subir imagen a Firebase Storage si existe
+    if (imageFile != null) {
+      imageUrl = await _uploadImageToFirebase(imageFile);
+    }
+
     var uri = Uri.parse('$_baseUrl/motorcycle/$motorcycleId/observations');
-    final body = {'observation': observation};
+    final body = {
+      'observation': observation,
+      if (imageUrl != null) 'image_url': imageUrl,
+    };
     var response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
