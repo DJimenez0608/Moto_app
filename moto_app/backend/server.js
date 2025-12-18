@@ -177,6 +177,107 @@ app.get("/users/:id/motorcycles", async (req, res) => {
 app.get("/users/:id/travels", (req, res) => {
     
 })
+//OBTENER LOS GASTOS DEL USUARIO
+app.get("/users/:id/gastos", async (req, res) => {
+    const userId = req.params.id;
+
+    try {
+        // Verificar que el usuario exista
+        const userExist = await db.query(
+            "SELECT * FROM users WHERE id = $1",
+            [userId]
+        );
+
+        if (userExist.rows.length < 1) {
+            return res.status(404).json({
+                success: false,
+                message: "Usuario no encontrado"
+            });
+        }
+
+        // Verificar que el usuario tenga motos registradas
+        const userMotorcycles = await db.query(
+            "SELECT id FROM motorcycles WHERE user_id = $1",
+            [userId]
+        );
+
+        if (userMotorcycles.rows.length < 1) {
+            return res.status(400).json({
+                success: false,
+                message: "El usuario no tiene motos registradas"
+            });
+        }
+
+        const motorcycleIds = userMotorcycles.rows.map(row => row.id);
+
+        // Obtener gastos de SOAT (incluyendo end_date para verificar vencimiento)
+        const soatQuery = await db.query(
+            "SELECT motorcycle_id, cost, start_date as fecha, end_date FROM soat WHERE motorcycle_id = ANY($1::int[]) ORDER BY motorcycle_id, start_date",
+            [motorcycleIds]
+        );
+
+        // Obtener gastos de técnicomecánica
+        const technomechanicalQuery = await db.query(
+            "SELECT motorcycle_id, cost, start_date as fecha FROM technomechanical WHERE motorcycle_id = ANY($1::int[]) ORDER BY motorcycle_id, start_date",
+            [motorcycleIds]
+        );
+
+        // Obtener gastos de mantenimientos
+        const maintenanceQuery = await db.query(
+            "SELECT motorcycle_id, cost, date as fecha FROM maintenance WHERE motorcycle_id = ANY($1::int[]) ORDER BY motorcycle_id, date",
+            [motorcycleIds]
+        );
+
+        // Agrupar resultados por motorcycle_id
+        const gastosPorMoto = {};
+
+        // Inicializar estructura para cada moto
+        motorcycleIds.forEach(motoId => {
+            gastosPorMoto[motoId.toString()] = {
+                soat: [],
+                tecnicomecanica: [],
+                maintenance: []
+            };
+        });
+
+        // Procesar SOAT
+        soatQuery.rows.forEach(row => {
+            const motoId = row.motorcycle_id.toString();
+            gastosPorMoto[motoId].soat.push({
+                costo: parseFloat(row.cost),
+                fecha: row.fecha.toISOString().split('T')[0], // Formato YYYY-MM-DD (start_date)
+                end_date: row.end_date ? row.end_date.toISOString().split('T')[0] : null // Formato YYYY-MM-DD (end_date)
+            });
+        });
+
+        // Procesar técnicomecánica
+        technomechanicalQuery.rows.forEach(row => {
+            const motoId = row.motorcycle_id.toString();
+            gastosPorMoto[motoId].tecnicomecanica.push({
+                costo: parseFloat(row.cost),
+                fecha: row.fecha.toISOString().split('T')[0] // Formato YYYY-MM-DD
+            });
+        });
+
+        // Procesar mantenimientos
+        maintenanceQuery.rows.forEach(row => {
+            const motoId = row.motorcycle_id.toString();
+            gastosPorMoto[motoId].maintenance.push({
+                costo: parseFloat(row.cost),
+                fecha: row.fecha.toISOString().split('T')[0] // Formato YYYY-MM-DD
+            });
+        });
+
+        res.status(200).json(gastosPorMoto);
+
+    } catch (error) {
+        console.error("Error al obtener gastos:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al obtener los gastos. Inténtelo en otro momento"
+        });
+    }
+})
 //OBTENER LAS OBSERVACIONES DE UNA MOTO
 app.get("/motorcycle/:id/observations", async (req, res) => {
     const motorcycleId = req.params.id;
@@ -597,7 +698,100 @@ app.post("/users/:id/motorcycles", async (req, res) => {
 app.post("/users/:id/travels", (req, res) => {
     
 })
+//AGREGAR SOAT A MOTO
+app.post("/motorcycle/:id/soat", async (req, res) => {
+    const motorcycleId = req.params.id;
 
+    try {
+        // Verificar que la motocicleta exista
+        const motorcycleExist = await db.query(
+            "SELECT * FROM motorcycles WHERE id = $1",
+            [motorcycleId]
+        );
+
+        if (motorcycleExist.rows.length < 1) {
+            return res.status(404).json({
+                success: false,
+                message: "Motocicleta no encontrada"
+            });
+        }
+
+        // Extraer datos del cuerpo de la petición
+        const { start_date, end_date, cost } = req.body;
+
+        // Validaciones
+        if (!start_date || typeof start_date !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: "La fecha de inicio es requerida"
+            });
+        }
+
+        if (!end_date || typeof end_date !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: "La fecha de fin es requerida"
+            });
+        }
+
+        // Validar formato de fecha (YYYY-MM-DD)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(start_date) || !dateRegex.test(end_date)) {
+            return res.status(400).json({
+                success: false,
+                message: "Formato de fecha inválido. Debe ser YYYY-MM-DD"
+            });
+        }
+
+        // Validar que el costo esté presente y sea un número válido
+        if (cost === undefined || cost === null) {
+            return res.status(400).json({
+                success: false,
+                message: "El costo es requerido"
+            });
+        }
+
+        const costNumber = parseFloat(cost);
+        if (isNaN(costNumber) || costNumber < 0) {
+            return res.status(400).json({
+                success: false,
+                message: "El costo debe ser un número válido y no negativo"
+            });
+        }
+
+        // Validar que la fecha de fin sea posterior a la fecha de inicio
+        const startDate = new Date(start_date);
+        const endDate = new Date(end_date);
+        if (endDate <= startDate) {
+            return res.status(400).json({
+                success: false,
+                message: "La fecha de fin debe ser posterior a la fecha de inicio"
+            });
+        }
+
+        // Insertar en tabla soat
+        await db.query(
+            "INSERT INTO soat (motorcycle_id, start_date, end_date, cost) VALUES ($1, $2, $3, $4)",
+            [
+                motorcycleId,
+                start_date,
+                end_date,
+                costNumber
+            ]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: "SOAT registrado exitosamente"
+        });
+    } catch (error) {
+        console.error("Error al registrar SOAT:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error al registrar el SOAT. Inténtelo en otro momento"
+        });
+    }
+})
 // ELIMINAR MOTOCICLETA
 app.delete("/motorcycles/:id", async (req, res) => {
     const motorcycleId = req.params.id

@@ -8,9 +8,11 @@ import 'package:moto_app/core/theme/app_colors.dart';
 import 'package:moto_app/domain/models/motorcycle.dart';
 import 'package:moto_app/domain/models/maintenance.dart';
 import 'package:moto_app/domain/models/observation.dart';
+import 'package:moto_app/domain/providers/gastos_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/observation_provider.dart';
+import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/features/auth/data/datasources/observation_http_service.dart';
 import 'package:moto_app/features/auth/data/datasources/maintenance_http_service.dart';
 
@@ -304,6 +306,32 @@ class _MotorcycleDetailScreenState extends State<MotorcycleDetailScreen> {
                                 setDialogState(() {
                                   isLoading = false;
                                 });
+
+                                // Recargar mantenimientos
+                                final maintenanceProvider =
+                                    Provider.of<MaintenanceProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                maintenanceProvider.getMaintenance(
+                                  motorcycle.id,
+                                );
+
+                                // Recargar gastos si el usuario está logueado
+                                final userProvider =
+                                    Provider.of<UserProvider>(
+                                      context,
+                                      listen: false,
+                                    );
+                                final user = userProvider.user;
+                                if (user != null) {
+                                  final gastosProvider =
+                                      Provider.of<GastosProvider>(
+                                        context,
+                                        listen: false,
+                                      );
+                                  gastosProvider.loadGastos(user.id);
+                                }
 
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(

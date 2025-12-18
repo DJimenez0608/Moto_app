@@ -9,6 +9,8 @@ import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/news_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
+import 'package:moto_app/domain/providers/gastos_provider.dart';
+import 'package:moto_app/features/auth/data/services/budget_service.dart';
 import 'package:moto_app/features/auth/presentation/screens/motorcycle_detail_screen.dart';
 import 'package:moto_app/features/auth/presentation/screens/trending_screen.dart';
 import 'package:provider/provider.dart';
@@ -28,12 +30,82 @@ class _HomeScreenState extends State<HomeScreen> {
   final PageController _pageController = PageController();
   final ScrollController _scrollController = ScrollController();
   int _currentTab = 1; // Home es el tab central
+  double? _budget;
+  bool _isBudgetWarningRead = false;
+  double? _currentYearTotal;
 
   @override
   void initState() {
     super.initState();
     _loadMotorcycles();
     _loadNews();
+    _loadBudgetInfo();
+    // Cargar gastos después del primer frame para evitar problemas durante el build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadGastos();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadBudgetInfo() async {
+    final currentYear = DateTime.now().year;
+    final budget = await BudgetService.getBudget(currentYear);
+    final isRead = await BudgetService.isBudgetWarningRead(currentYear);
+    
+    if (mounted) {
+      setState(() {
+        _budget = budget;
+        _isBudgetWarningRead = isRead;
+      });
+      
+      // Cargar el total después de actualizar el estado
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _updateTotal();
+      });
+    }
+  }
+
+  void _updateTotal() {
+    if (!mounted) return;
+    try {
+      final gastosProvider = Provider.of<GastosProvider>(context, listen: false);
+      final total = gastosProvider.getTotalByYear(DateTime.now().year);
+      
+      if (mounted) {
+        setState(() {
+          _currentYearTotal = total;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error updating total: $e');
+    }
+  }
+
+  Future<void> _loadGastos() async {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final gastosProvider = Provider.of<GastosProvider>(context, listen: false);
+    
+    final user = userProvider.user;
+    if (user != null) {
+      try {
+        await gastosProvider.loadGastos(user.id);
+        // Actualizar el total después de cargar los gastos, pero solo después del build
+        Future.microtask(() {
+          if (mounted) {
+            _updateTotal();
+          }
+        });
+      } catch (e) {
+        // Silenciar errores de gastos en home screen
+        debugPrint('Error al cargar gastos en HomeScreen: $e');
+      }
+    }
   }
 
   Future<void> _loadMotorcycles() async {
@@ -84,12 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    _scrollController.dispose();
-    super.dispose();
-  }
 
   void _openMotorcycleDetail(Motorcycle motorcycle) {
     final heroTag = 'motorcycle_${motorcycle.id}';
@@ -207,12 +273,22 @@ class _HomeScreenState extends State<HomeScreen> {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final maintenanceList = maintenanceProvider.allMaintenance;
+    final allMaintenanceList = maintenanceProvider.allMaintenance;
     final errorMessage = maintenanceProvider.errorMessage;
+    final registeredMotorcycleIds = {
+      for (final motorcycle in motorcycleProvider.motorcycles)
+        motorcycle.id
+    };
     final motorcycleNameById = {
       for (final motorcycle in motorcycleProvider.motorcycles)
         motorcycle.id: '${motorcycle.make} ${motorcycle.model}',
     };
+
+    // Filtrar mantenimientos para mostrar solo los de motos registradas
+    final maintenanceList = allMaintenanceList
+        .where((maintenance) =>
+            registeredMotorcycleIds.contains(maintenance.motorcycleId))
+        .toList();
 
     final Widget maintenanceContent;
     if (maintenanceProvider.isLoading && maintenanceList.isEmpty) {
@@ -247,6 +323,17 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Advertencia de presupuesto excedido
+              _BudgetWarningWidget(
+                budget: _budget,
+                isRead: _isBudgetWarningRead,
+                currentYearTotal: _currentYearTotal,
+                onMarkAsRead: () {
+                  setState(() {
+                    _isBudgetWarningRead = true;
+                  });
+                },
+              ),
               // PageView con noticias
               Consumer<NewsProvider>(
                 builder: (context, newsProvider, _) {
@@ -594,6 +681,105 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+        ],
+      ),
+    );
+  }
+}
+
+class _BudgetWarningWidget extends StatelessWidget {
+  const _BudgetWarningWidget({
+    required this.budget,
+    required this.isRead,
+    required this.currentYearTotal,
+    required this.onMarkAsRead,
+  });
+
+  final double? budget;
+  final bool isRead;
+  final double? currentYearTotal;
+  final VoidCallback onMarkAsRead;
+
+  @override
+  Widget build(BuildContext context) {
+    if (budget == null || isRead) {
+      return const SizedBox.shrink();
+    }
+
+    if (currentYearTotal == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isExceeded = currentYearTotal! > budget!;
+
+    if (!isExceeded) {
+      return const SizedBox.shrink();
+    }
+
+    final difference = currentYearTotal! - budget!;
+    final theme = Theme.of(context);
+
+    String _getFormattedTotal(double total) {
+      final rounded = total.toStringAsFixed(0);
+      final buffer = StringBuffer();
+      final chars = rounded.split('').reversed.toList();
+      for (int i = 0; i < chars.length; i++) {
+        if (i != 0 && i % 3 == 0) buffer.write(',');
+        buffer.write(chars[i]);
+      }
+      final formatted = buffer.toString().split('').reversed.join();
+      return '\$ $formatted';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadius * 1.5),
+        border: Border.all(
+          color: Colors.red.shade300,
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: Colors.red.shade700,
+            size: 32,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Presupuesto excedido',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red.shade900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Has superado tu presupuesto por ${_getFormattedTotal(difference)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.red.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final currentYear = DateTime.now().year;
+              await BudgetService.markBudgetWarningAsRead(currentYear);
+              onMarkAsRead();
+            },
+            child: const Text('Leído'),
+          ),
         ],
       ),
     );

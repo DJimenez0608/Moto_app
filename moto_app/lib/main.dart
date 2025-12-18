@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:moto_app/domain/providers/gastos_provider.dart';
 import 'package:moto_app/domain/providers/maintenance_provider.dart';
 import 'package:moto_app/domain/providers/motorcycle_provider.dart';
 import 'package:moto_app/domain/providers/news_provider.dart';
@@ -8,6 +9,7 @@ import 'package:moto_app/domain/providers/observation_provider.dart';
 import 'package:moto_app/domain/providers/soat_provider.dart';
 import 'package:moto_app/domain/providers/technomechanical_provider.dart';
 import 'package:moto_app/domain/providers/travel_provider.dart';
+import 'package:moto_app/domain/providers/trending_product_provider.dart';
 import 'package:moto_app/domain/providers/user_provider.dart';
 import 'package:moto_app/domain/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
@@ -54,6 +56,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => SoatProvider()),
         ChangeNotifierProvider(create: (context) => TechnomechanicalProvider()),
         ChangeNotifierProvider(create: (context) => NewsProvider()),
+        ChangeNotifierProvider(create: (context) => GastosProvider()),
+        ChangeNotifierProvider(create: (context) => TrendingProductProvider()),
         // Aquí se pueden agregar más providers en el futuro
       ],
       child: Consumer<ThemeProvider>(
