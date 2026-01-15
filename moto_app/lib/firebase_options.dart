@@ -49,20 +49,63 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCOn555uIlWE4mVWp-Lk8G57mWpBysbVpg',
-    appId: '1:867629483012:android:2c82a6f21b45566f1e2151',
-    messagingSenderId: '867629483012',
-    projectId: 'motoapp-72972',
-    storageBucket: 'motoapp-72972.firebasestorage.app',
-  );
+  static FirebaseOptions get android {
+    final apiKey = dotenv.env['FIREBASE_ANDROID_API_KEY'];
+    final appId = dotenv.env['FIREBASE_ANDROID_APP_ID'];
+    final messagingSenderId = dotenv.env['FIREBASE_MESSAGING_SENDER_ID'];
+    final projectId = dotenv.env['FIREBASE_PROJECT_ID'];
+    final storageBucket = dotenv.env['FIREBASE_STORAGE_BUCKET'];
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAsXG9xRA4bRJsBs4ndyrecjL7TXHfK3Rw',
-    appId: '1:867629483012:ios:9ef77052e9e49fd81e2151',
-    messagingSenderId: '867629483012',
-    projectId: 'motoapp-72972',
-    storageBucket: 'motoapp-72972.firebasestorage.app',
-    iosBundleId: 'com.example.motoApp',
-  );
+    if (apiKey == null ||
+        appId == null ||
+        messagingSenderId == null ||
+        projectId == null ||
+        storageBucket == null) {
+      throw Exception(
+        'Firebase configuration missing in .env file. '
+        'Required: FIREBASE_ANDROID_API_KEY, FIREBASE_ANDROID_APP_ID, '
+        'FIREBASE_MESSAGING_SENDER_ID, FIREBASE_PROJECT_ID, FIREBASE_STORAGE_BUCKET',
+      );
+    }
+
+    return FirebaseOptions(
+      apiKey: apiKey,
+      appId: appId,
+      messagingSenderId: messagingSenderId,
+      projectId: projectId,
+      storageBucket: storageBucket,
+    );
+  }
+
+  static FirebaseOptions get ios {
+    final apiKey = dotenv.env['FIREBASE_IOS_API_KEY'];
+    final appId = dotenv.env['FIREBASE_IOS_APP_ID'];
+    final messagingSenderId = dotenv.env['FIREBASE_MESSAGING_SENDER_ID'];
+    final projectId = dotenv.env['FIREBASE_PROJECT_ID'];
+    final storageBucket = dotenv.env['FIREBASE_STORAGE_BUCKET'];
+    final iosBundleId = dotenv.env['FIREBASE_IOS_BUNDLE_ID'];
+
+    if (apiKey == null ||
+        appId == null ||
+        messagingSenderId == null ||
+        projectId == null ||
+        storageBucket == null ||
+        iosBundleId == null) {
+      throw Exception(
+        'Firebase configuration missing in .env file. '
+        'Required: FIREBASE_IOS_API_KEY, FIREBASE_IOS_APP_ID, '
+        'FIREBASE_MESSAGING_SENDER_ID, FIREBASE_PROJECT_ID, '
+        'FIREBASE_STORAGE_BUCKET, FIREBASE_IOS_BUNDLE_ID',
+      );
+    }
+
+    return FirebaseOptions(
+      apiKey: apiKey,
+      appId: appId,
+      messagingSenderId: messagingSenderId,
+      projectId: projectId,
+      storageBucket: storageBucket,
+      iosBundleId: iosBundleId,
+    );
+  }
 }
